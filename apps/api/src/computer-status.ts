@@ -1,5 +1,5 @@
 import { computerSupportsTerminal, computerSupportsUpdate } from "@rakazo/adapters";
-import type { ComputerStatus } from "@rakazo/contracts";
+import { type ComputerStatus, SandboxKind } from "@rakazo/contracts";
 import { ACTIVE_RUN_STATUSES, computerScreenSize } from "@rakazo/core";
 import type { PrismaClient } from "@rakazo/db";
 
@@ -75,7 +75,11 @@ export function toComputerStatus(
         ? computer.state
         : "stopped";
   const screen = computerScreenSize(computer?.kind);
-  const kind = (computer?.kind ?? "fake") as ComputerStatus["kind"];
+  // A deployment without a computer host (SANDBOX_PROVIDER=none) still records the bot's
+  // computer, with kind "none", which is no SandboxKind: report it like no computer at all,
+  // or every response that carries this status fails output validation.
+  const parsedKind = SandboxKind.safeParse(computer?.kind);
+  const kind: ComputerStatus["kind"] = parsedKind.success ? parsedKind.data : "fake";
   return {
     botId,
     mode: computer?.scope === "dedicated" ? "dedicated" : "team",

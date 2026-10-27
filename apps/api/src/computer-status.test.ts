@@ -1,3 +1,4 @@
+import { ComputerStatusSchema } from "@rakazo/contracts";
 import { describe, expect, it } from "vitest";
 import { executionBlocksUserTakeover, toComputerStatus } from "./computer-status.js";
 
@@ -50,6 +51,19 @@ describe("toComputerStatus", () => {
         homeRevision: "r1",
       }).canUpdate,
     ).toBe(true);
+  });
+
+  it("reports a computer on a deployment without a computer host as a valid status", () => {
+    const status = toComputerStatus("bot-1", {
+      kind: "none",
+      state: "stopped",
+      scope: "team",
+      controlHolder: "none",
+      homeRevision: "",
+    });
+    expect(ComputerStatusSchema.safeParse(status).success).toBe(true);
+    expect(status.kind).toBe("fake");
+    expect(status.screenAvailable).toBe(false);
   });
 });
 
