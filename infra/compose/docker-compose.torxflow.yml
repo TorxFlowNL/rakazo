@@ -1,0 +1,21 @@
+# Rakazo next to a TorxFlow box (https://github.com/TorxFlowNL/torxflow, infra/box).
+#
+# TorxFlow's Caddy owns ports 80/443 on the server and terminates TLS for both the
+# garage's dashboard and this workspace. It reaches this stack's Caddy, which then
+# serves plain HTTP (RAKAZO_HOST=http://<host>), over the shared external `edge`
+# network under the name `rakazo-caddy`. Nothing else of this stack joins it.
+#
+# Layer it after the production file in every Compose invocation:
+#   docker compose --env-file .env -f infra/compose/docker-compose.prod.yml \
+#     -f infra/compose/docker-compose.torxflow.yml up -d --build --wait
+services:
+  caddy:
+    ports: !reset []
+    networks:
+      torxflow_edge:
+        aliases: [rakazo-caddy]
+
+networks:
+  torxflow_edge:
+    name: edge
+    external: true
