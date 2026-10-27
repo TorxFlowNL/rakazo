@@ -494,6 +494,7 @@ export function reduceThreadSnapshot(
     const blocks = reduceLiveMessageBlocks(previous?.blocks ?? [], {
       type: "tool",
       name: String(event.payload.name ?? ""),
+      title: typeof event.payload.title === "string" ? event.payload.title : undefined,
     });
     const next: ThreadMessage = {
       id: liveId,

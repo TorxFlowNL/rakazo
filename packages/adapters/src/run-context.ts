@@ -89,6 +89,8 @@ export interface ReplyState {
    * sentence boundary, so the step chips never render in the middle of a clause.
    */
   pendingToolNames: string[];
+  /** Server-declared titles of the tools in `pendingToolNames`, keyed by tool name. */
+  pendingToolTitles: Map<string, string>;
   pendingProgress: string;
   lastProgressAt: number;
   hasStreamedText: boolean;

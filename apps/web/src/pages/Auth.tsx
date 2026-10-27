@@ -12,6 +12,7 @@ import { PasskeySignIn } from "../components/PasskeySignIn";
 import { authClient } from "../lib/auth";
 import type { AuthCapabilities } from "../lib/auth-capabilities";
 import { fetchAuthCapabilities } from "../lib/auth-capabilities";
+import { isBranded, showPasskeySignIn } from "../lib/brand-chrome";
 import { clearSpaceSelection } from "../lib/rpc";
 import { runSsoFlow } from "../lib/sso-flow";
 import { authErrorText, credentialIssueText } from "../lib/user-error";
@@ -52,9 +53,17 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
     sent || codeStep ? (
       <Trans>Check your email</Trans>
     ) : mode === "in" ? (
-      <Trans>Sign in to Rakazo</Trans>
+      isBranded() ? (
+        <Trans>Sign in</Trans>
+      ) : (
+        <Trans>Sign in to Rakazo</Trans>
+      )
     ) : mode === "up" ? (
-      <Trans>Create your Rakazo</Trans>
+      isBranded() ? (
+        <Trans>Sign up</Trans>
+      ) : (
+        <Trans>Create your Rakazo</Trans>
+      )
     ) : (
       <Trans>Reset your password</Trans>
     );
@@ -366,7 +375,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                   <Trans>Create account</Trans>
                 )}
               </Button>
-              {mode === "in" && !codeStep ? (
+              {mode === "in" && !codeStep && showPasskeySignIn() ? (
                 <PasskeySignIn
                   disabled={pending}
                   className={submitClass}

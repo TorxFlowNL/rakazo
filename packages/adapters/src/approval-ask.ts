@@ -34,7 +34,12 @@ export function buildApprovalAskBlock(
   toolName: string,
   args: Record<string, unknown>,
   secrets: string[],
-  options?: { reviewReason?: string; summary?: FleetCardSummary },
+  options?: {
+    reviewReason?: string;
+    summary?: FleetCardSummary;
+    /** A connector tool and the title its server gave it: the card names the tool by title. */
+    tool?: { name: string; title?: string };
+  },
 ): MessageBlock {
   if (options?.summary) {
     // Built from what was resolved before the effect was recorded, not from what the model typed.
@@ -120,7 +125,7 @@ export function buildApprovalAskBlock(
     };
   }
   const fetchSite = webFetchSite(toolName, args);
-  const summary = describeApprovalAction(toolName, args);
+  const summary = describeApprovalAction(toolName, args, options?.tool?.title);
   const detail = formatApprovalDetail(toolName, args, options?.reviewReason);
   const safeDetail = detail ? redactSecrets(detail, secrets) : undefined;
   return {
@@ -135,6 +140,7 @@ export function buildApprovalAskBlock(
     ),
     detail: safeDetail ? truncate(safeDetail, MAX_APPROVAL_DETAIL_LENGTH) : undefined,
     ...(fetchSite ? { site: fetchSite } : {}),
+    ...(options?.tool ? { tool: options.tool } : {}),
     status: "pending",
     actions:
       toolName === "create_space"
@@ -162,7 +168,11 @@ function webFetchSite(toolName: string, args: Record<string, unknown>): string |
   return toolName === "web_fetch" && typeof args.url === "string" ? urlSite(args.url) : undefined;
 }
 
-function describeApprovalAction(toolName: string, args: Record<string, unknown>): string {
+function describeApprovalAction(
+  toolName: string,
+  args: Record<string, unknown>,
+  title?: string,
+): string {
   // A Composio batch is named by the actions it runs; "…" stands for an entry that names none.
   const batch = composioBatchActions(toolName, args);
   if (batch?.slugs.length) return [...batch.slugs, ...(batch.complete ? [] : ["…"])].join(", ");
@@ -174,8 +184,9 @@ function describeApprovalAction(toolName: string, args: Record<string, unknown>)
     const name = args.name ? String(args.name) : "Untitled";
     return `Create space “${name}”`;
   }
+  const label = title ?? toolName;
   const target = webFetchSite(toolName, args) ?? pickScopeLabel(args);
-  return target ? `${toolName} → ${target}` : toolName;
+  return target ? `${label} → ${target}` : label;
 }
 
 function formatApprovalDetail(

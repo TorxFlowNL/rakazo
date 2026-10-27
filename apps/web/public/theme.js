@@ -8,7 +8,16 @@
   } catch {}
   const systemLight =
     typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
-  const theme = preference === "system" ? (systemLight ? "light" : "dark") : preference;
+  // A brand (see brand.ts in ui-tokens) fixes the appearance; its bootstrap script runs first.
+  const locked = document.documentElement.dataset.appearance;
+  const theme =
+    locked === "light" || locked === "dark"
+      ? locked
+      : preference === "system"
+        ? systemLight
+          ? "light"
+          : "dark"
+        : preference;
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
   const meta = document.querySelector('meta[name="theme-color"]');

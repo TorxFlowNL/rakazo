@@ -175,6 +175,7 @@ import {
   createTorxflowProvisioner,
   type TorxflowProvisioner,
   torxflowPersonaFetcher,
+  torxflowToolLister,
 } from "./torxflow-provision.js";
 import { mountUserDeviceRoutes } from "./user-devices.js";
 import { mountVoiceHttpRoutes, voiceAccountErrorStatus } from "./voice.js";
@@ -753,6 +754,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
           phoneCallRingSeconds: env.phoneCallRingSeconds,
         }).createBot(actor, input),
       persona: torxflowPersonaFetcher(routerDeps),
+      tools: torxflowToolLister(routerDeps),
     });
   }
   const rpc = new RPCHandler(router, {

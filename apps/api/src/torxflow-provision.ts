@@ -1,16 +1,30 @@
 import type { SecretRecord, SecretStore } from "@rakazo/adapter-kit";
-import { createSafeRemoteFetch, persistPreparedSecret } from "@rakazo/adapters";
+import { createSafeRemoteFetch, listRemoteMcpTools, persistPreparedSecret } from "@rakazo/adapters";
 import type { TorxflowProvisionInput } from "@rakazo/auth";
 import type { Actor, Bot, McpServerConfigInput as McpServerInput } from "@rakazo/contracts";
 import { BOT_INSTRUCTIONS_MAX_LENGTH, McpServerConfigInput } from "@rakazo/contracts";
+import { BOT_COLOR_LIST } from "@rakazo/core";
 import type { McpServer as McpServerRow, Prisma, PrismaClient } from "@rakazo/db";
+import { syncManagedApprovalRules } from "@rakazo/db";
+import { getLogger } from "@rakazo/logging";
 import type { McpSecretMaterial } from "./mcp-material.js";
 import type { RouterDeps } from "./router.js";
 import { isUniqueViolation } from "./routes/shared.js";
 
 /** The slug that identifies the garage's tools among a member's MCP servers. */
 export const TORXFLOW_MCP_SLUG = "torxflow";
+/** Marks the approval rules provisioning keeps in sync, so it never touches a member's own. */
+export const TORXFLOW_RULE_SOURCE = "torxflow:read-only-tools";
 const PERSONA_TIMEOUT_MS = 5_000;
+const MAX_TOOL_NAME_LENGTH = 128;
+/** Tessa's avatar: the persona palette's orange, whose gradient ends at TorxFlow's #EA580C. */
+const TESSA_AVATAR_COLOR = BOT_COLOR_LIST.find((color) => color.id === "orange")!.hex;
+
+/** One tool the garage's MCP server lists. `readOnly` is its `annotations.readOnlyHint`. */
+export interface TorxflowTool {
+  name: string;
+  readOnly?: boolean;
+}
 
 /** What the garage's persona endpoint answers: the bot's name and its instructions. */
 export interface TorxflowPersona {
@@ -59,11 +73,14 @@ export interface TorxflowProvisionDeps {
       description: string;
       instructions: string;
       notifyOnFinish: boolean;
+      color: string;
       spawnKey: string;
     },
   ) => Promise<Pick<Bot, "id">>;
   /** The same egress policy remote MCP uses, so the persona is fetched from a public https host. */
   persona: (url: string, token: string) => Promise<TorxflowPersona>;
+  /** The garage's tools and what each declares, listed through the same remote MCP transport. */
+  tools: (url: string, token: string) => Promise<TorxflowTool[]>;
 }
 
 /** Fetches `<mcp url>/persona` through the SSRF-checked transport remote MCP servers use. */
@@ -89,11 +106,28 @@ export function torxflowPersonaFetcher(
   };
 }
 
+/** Lists the garage's MCP tools through the SSRF-checked transport remote MCP servers use. */
+export function torxflowToolLister(
+  deps: Pick<RouterDeps, "remoteConnectors" | "env">,
+): TorxflowProvisionDeps["tools"] {
+  return async (url, token) =>
+    (
+      await listRemoteMcpTools({
+        endpoint: url,
+        headers: { authorization: `Bearer ${token}` },
+        fetch: deps.remoteConnectors?.fetch,
+        resolveHostname: deps.remoteConnectors?.resolveHostname,
+        allowPrivateEndpoint: deps.env.mcpAllowPrivateEndpoint === true,
+      })
+    ).map((tool) => ({ name: tool.name, readOnly: tool.readOnly }));
+}
+
 /**
- * Gives one member of a garage space what Tessa needs: the TorxFlow MCP install, and a Tessa bot
- * that uses it. Both are per member because Rakazo keeps bots and MCP servers private to the
- * member who owns them. Every step finds its existing row first, so calling it on each sign-in
- * never duplicates anything, and a step that failed last time is retried.
+ * Gives one member of a garage space what Tessa needs: the TorxFlow MCP install, approval rules
+ * that let its read-only tools run unasked, and a Tessa bot that uses it. All are per member
+ * because Rakazo keeps bots, MCP servers and approval rules private to the member who owns
+ * them. Every step finds its existing row first, so calling it on each sign-in never
+ * duplicates anything, and a step that failed last time is retried.
  */
 export function createTorxflowProvisioner(deps: TorxflowProvisionDeps) {
   const { prisma } = deps;
@@ -209,6 +243,7 @@ export function createTorxflowProvisioner(deps: TorxflowProvisionDeps) {
         description: "",
         instructions: persona.instructions,
         notifyOnFinish: true,
+        color: TESSA_AVATAR_COLOR,
         spawnKey,
       });
     }
@@ -226,6 +261,43 @@ export function createTorxflowProvisioner(deps: TorxflowProvisionDeps) {
     });
   };
 
+  /**
+   * Rakazo asks before any MCP tool whose name does not read like a lookup, whatever the server
+   * declares, so the tools TorxFlow declares read-only get an always-allow rule of the member's
+   * own (Settings, approval rules), one per tool. The rules are exact tool names, never a
+   * pattern, so a write tool is never covered, and a tool that also exists under a
+   * case-variant name that is not read-only is left out because rules ignore case. A tool
+   * that stopped being read-only or disappeared loses its rule. Only rules this sets are
+   * touched. When the tools cannot be listed nothing changes.
+   */
+  const ensureReadOnlyRules = async (actor: Actor) => {
+    const tools = await deps.tools(deps.mcp.url, deps.mcp.token);
+    const mayWrite = new Set(
+      tools.filter((tool) => tool.readOnly !== true).map((tool) => tool.name.toLowerCase()),
+    );
+    const matchValues = tools
+      .filter(
+        (tool) =>
+          tool.readOnly === true &&
+          tool.name.length > 0 &&
+          tool.name.length <= MAX_TOOL_NAME_LENGTH &&
+          !mayWrite.has(tool.name.toLowerCase()),
+      )
+      .map((tool) => `mcp__${TORXFLOW_MCP_SLUG}__${tool.name}`);
+    await prisma.$transaction((tx) =>
+      syncManagedApprovalRules(
+        tx,
+        { userId: actor.userId, spaceId: actor.spaceId },
+        {
+          source: TORXFLOW_RULE_SOURCE,
+          effect: "always_allow",
+          matchKind: "tool",
+          matchValues,
+        },
+      ),
+    );
+  };
+
   const provision: TorxflowProvisioner = async (input) => {
     const actor: Actor = {
       userId: input.userId,
@@ -234,7 +306,13 @@ export function createTorxflowProvisioner(deps: TorxflowProvisionDeps) {
       isDeploymentOwner: false,
     };
     // The sign-in keeps going when this throws; the next one retries from where this stopped.
-    await ensureBot(actor, await ensureServer(actor));
+    const server = await ensureServer(actor);
+    // Before the bot, which needs the persona and can fail on it; a failure here only means
+    // Tessa asks about lookups until the next sign-in.
+    await ensureReadOnlyRules(actor).catch((error: unknown) =>
+      getLogger().error("torxflow read-only approval rules", error),
+    );
+    await ensureBot(actor, server);
   };
   return provision;
 }

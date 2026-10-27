@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `MASTER_KEY_PROVIDER=aws-kms` wraps content keys with an AWS KMS key, so the master key no longer sits on the server. `content-encryption rotate` moves existing keys over ([content encryption](docs/content-encryption.md#external-key-management)).
 - Ollama Cloud preset in Models settings on web and mobile, using an OpenAI-compatible connection with model discovery and no deployment configuration.
+- TorxFlow sign-in gives each member always-allow approval rules for the garage's tools that declare `readOnlyHint`, so lookups run without an approval card while write tools still ask. Rules are exact tool names, tracked by a new `source` column on approval rules, and updated on every sign-in without touching rules a member made ([TorxFlow integration](docs/self-host.md#torxflow-integration)).
+- With `RAKAZO_BRAND` set, the web app drops what only makes sense for a Rakazo signup: the passkey offer and passkey settings, the appearance switch, the signup survey, onboarding tour and agent import, app-download and docs links, plan and upgrade prompts, the support chat and the Rakazo name. Computer buttons, panels and the bot's computer mode are hidden while the server reports `SANDBOX_PROVIDER=none`, including without a brand. Settings → Computer, which explains how to turn computers on, stays for unbranded deployments.
 
 ### Fixed
 

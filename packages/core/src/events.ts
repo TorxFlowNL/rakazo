@@ -2,6 +2,7 @@ import type { MessageBlock, ThreadMessage } from "@rakazo/contracts";
 import { cloudAgentBlockFromPayload } from "./cloud-agent.js";
 import { preserveIdentitySource } from "./identity-source.js";
 import { modelFallbackFailure, parseModelFallbackFailure } from "./run-error.js";
+import { toolDisplayName } from "./tool-title.js";
 
 export function projectMessages(
   events: Array<{
@@ -112,6 +113,7 @@ export function projectMessages(
       live.blocks = reduceLiveMessageBlocks(live.blocks, {
         type: "tool",
         name: String(payload.name ?? ""),
+        title: typeof payload.title === "string" ? payload.title : undefined,
       });
       live.meta = {
         ...live.meta,
@@ -298,7 +300,7 @@ function clampRunFailure(message: string): string {
 
 export type LiveMessageUpdate =
   | { type: "progress"; payload: Record<string, unknown> | undefined }
-  | { type: "tool"; name: string };
+  | { type: "tool"; name: string; title?: string };
 
 export function reduceLiveMessageBlocks(
   blocks: readonly MessageBlock[],
@@ -319,6 +321,10 @@ export function reduceLiveMessageBlocks(
     ...(tail?.kind === "progress" ? (tail.pendingToolNames ?? []) : []),
     ...(update.type === "tool" ? [update.name] : []),
   ];
+  const pendingToolTitles: Record<string, string> = {
+    ...(tail?.kind === "progress" ? tail.pendingToolTitles : undefined),
+    ...(update.type === "tool" && update.title ? { [update.name]: update.title } : undefined),
+  };
   const activity =
     update.type === "progress"
       ? update.payload?.activity === true
@@ -326,7 +332,13 @@ export function reduceLiveMessageBlocks(
 
   if (pendingToolNames.length > 0 && endsSentence(tailText)) {
     let next = activity ? [...segments] : appendTextSegment(segments, tailText);
-    for (const name of pendingToolNames) next = appendToolCallSegment(next, name);
+    for (const name of pendingToolNames) {
+      next = appendToolCallSegment(
+        next,
+        name,
+        Object.hasOwn(pendingToolTitles, name) ? pendingToolTitles[name] : undefined,
+      );
+    }
     return next;
   }
   if (!tailText) return [...segments];
@@ -337,6 +349,9 @@ export function reduceLiveMessageBlocks(
       text: tailText,
       ...(activity ? { activity: true as const } : {}),
       ...(pendingToolNames.length > 0 ? { pendingToolNames } : {}),
+      ...(pendingToolNames.length > 0 && Object.keys(pendingToolTitles).length > 0
+        ? { pendingToolTitles }
+        : {}),
     },
   ];
 }
@@ -373,8 +388,12 @@ export function liveActivityLine(
 
 export type ToolStep = { label: string; count: number };
 
-export function appendToolStep(steps: readonly ToolStep[], toolName: string): ToolStep[] {
-  const label = humanizeToolName(toolName);
+export function appendToolStep(
+  steps: readonly ToolStep[],
+  toolName: string,
+  title?: string,
+): ToolStep[] {
+  const label = toolDisplayName({ name: toolName, title });
   const last = steps.at(-1);
   if (last && last.label === label) {
     return [...steps.slice(0, -1), { label, count: last.count + 1 }];
@@ -418,10 +437,11 @@ export function appendTextSegment(segments: readonly MessageBlock[], text: strin
 export function appendToolCallSegment(
   segments: readonly MessageBlock[],
   toolName: string,
+  title?: string,
 ): MessageBlock[] {
   const last = segments.at(-1);
   const priorSteps = last?.kind === "steps" ? last.steps : [];
-  const steps = appendToolStep(priorSteps, toolName);
+  const steps = appendToolStep(priorSteps, toolName, title);
   if (last?.kind === "steps") {
     return [...segments.slice(0, -1), { kind: "steps", steps }];
   }
@@ -429,10 +449,7 @@ export function appendToolCallSegment(
 }
 
 export function humanizeToolName(name: string): string {
-  const spaced = name.replace(/_/g, " ").trim();
-  if (!spaced) return name;
-  const lower = spaced.toLowerCase();
-  return lower.charAt(0).toUpperCase() + lower.slice(1);
+  return name.trim() ? toolDisplayName({ name }) : name;
 }
 
 export function progressMessageText(

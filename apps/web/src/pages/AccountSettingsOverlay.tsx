@@ -44,6 +44,7 @@ import {
   setBotsSidebarDensity,
   subscribeBotsSidebarDensity,
 } from "../lib/bots-sidebar-density-pref";
+import { showAppearanceSetting, showPasskeySettings } from "../lib/brand-chrome";
 import {
   getComposerEnterToSend,
   setComposerEnterToSend,
@@ -160,7 +161,7 @@ export function GeneralSettingsPanels({
   const showPassword = Boolean(
     accountSecurity?.hasPassword && accountSecurity.passwordChangeEnabled !== false,
   );
-  const passkeysSupported = usePasskeysSupported();
+  const passkeysSupported = usePasskeysSupported() && showPasskeySettings();
   const [timezonePending, setTimezonePending] = useState(false);
   const [timezoneError, setTimezoneError] = useState<string | null>(null);
   const deviceTimezone = localTimezone();
@@ -269,18 +270,20 @@ export function GeneralSettingsPanels({
       </SettingsGroup>
 
       <SettingsGroup title={<Trans>Preferences</Trans>}>
-        <SettingsRow
-          label={<Trans>Appearance</Trans>}
-          control={
-            <AppearancePicker
-              value={appearance}
-              onChange={(next) => {
-                setAppearance(next);
-                setUiAppearance(next);
-              }}
-            />
-          }
-        />
+        {showAppearanceSetting() ? (
+          <SettingsRow
+            label={<Trans>Appearance</Trans>}
+            control={
+              <AppearancePicker
+                value={appearance}
+                onChange={(next) => {
+                  setAppearance(next);
+                  setUiAppearance(next);
+                }}
+              />
+            }
+          />
+        ) : null}
         <SettingsRow
           label={
             <span id={sidebarDensityLabelId}>
@@ -460,7 +463,7 @@ export function GeneralSettingsPanels({
       {showPassword || passkeysSupported ? (
         <SettingsGroup title={<Trans>Security</Trans>}>
           {showPassword ? <ChangePasswordRow email={email} /> : null}
-          <PasskeySettings />
+          {showPasskeySettings() ? <PasskeySettings /> : null}
         </SettingsGroup>
       ) : null}
 

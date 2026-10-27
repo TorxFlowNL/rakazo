@@ -115,7 +115,7 @@ export function normalizeAgentToolName(name: string): string {
 const ACTIVITY_DETAIL_LIMIT = 90;
 
 /** One human-readable line describing a tool call, shown live in the thread. */
-export function describeToolActivity(toolName: string, args: unknown): string {
+export function describeToolActivity(toolName: string, args: unknown, title?: string): string {
   const record = args && typeof args === "object" ? (args as Record<string, unknown>) : {};
   const detail = (value: unknown): string => {
     const text = sanitizeSensitiveText(String(value ?? ""))
@@ -159,6 +159,7 @@ export function describeToolActivity(toolName: string, args: unknown): string {
     return `Updating skill: ${detail(record.name ?? record.skillId)}`;
   if (toolName === "skill_delete")
     return `Deleting skill: ${detail(record.name ?? record.skillId)}`;
+  if (title) return `Using ${title}`;
   const mcp = toolName.match(/^mcp__(.+?)__(.+)$/);
   if (mcp) return `Using ${mcp[1]}: ${mcp[2]}`;
   return `Using ${toolName}`;

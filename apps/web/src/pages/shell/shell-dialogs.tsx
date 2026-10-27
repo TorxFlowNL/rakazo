@@ -9,6 +9,7 @@ import {
 import { Settings, Trash2 } from "lucide-react";
 import type { ComponentProps, RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { showMarketing } from "../../lib/brand-chrome";
 import type { Panel } from "../../lib/right-panel-state";
 import type { createSpaceRpc } from "../../lib/rpc";
 import { selectSpace } from "../../lib/rpc";
@@ -315,7 +316,7 @@ export function ShellDialogs({
         <CreateBotDialog
           onCancel={() => setCreateBotOpen(false)}
           onCreate={createBot}
-          onImport={onImportFromCreate}
+          onImport={showMarketing() ? onImportFromCreate : undefined}
         />
       ) : null}
 

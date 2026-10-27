@@ -231,3 +231,19 @@ describe("ToolOnlyNarration", () => {
     expect(html).not.toMatch(OPEN_TRIGGER);
   });
 });
+
+describe("ToolSteps labels", () => {
+  it("shows a step saved from a raw MCP id as readable words", () => {
+    const html = renderToStaticMarkup(
+      <ToolSteps
+        steps={[
+          { label: "Mcp  torxflow  check apk status", count: 2 },
+          { label: "APK-status opzoeken", count: 1 },
+        ]}
+      />,
+    );
+    expect(visibleText(html)).toContain("Check apk status ×2");
+    expect(visibleText(html)).toContain("APK-status opzoeken");
+    expect(html).not.toContain("Mcp");
+  });
+});

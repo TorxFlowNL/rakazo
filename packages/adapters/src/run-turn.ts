@@ -11,10 +11,10 @@ import {
 import {
   containsSecret,
   displayName,
-  humanizeToolName,
   isBackgroundRunTrigger,
   redactSecrets,
   TAKEOVER_COMPUTER_PENDING_STATE,
+  toolDisplayName,
   userRunError,
 } from "@rakazo/core";
 import { recordUsage } from "@rakazo/db";
@@ -357,15 +357,17 @@ async function onToolCalled(ctx: RunContext, event: RuntimeEvent<"tool">): Promi
     await publishMidTurnNarration(ctx);
   }
   reply.assistantTurnBreakPending = true;
+  const title = ctx.tools.connector.get(event.name)?.title;
   await deps.events.append({
     spaceId: run.spaceId,
     threadId: thread.id,
     botId: bot.id,
     type: "agent.tool.called",
     runId,
-    payload: { name: event.name, executionId: event.executionId },
+    payload: { name: event.name, executionId: event.executionId, ...(title ? { title } : {}) },
   });
   reply.pendingToolNames.push(event.name);
+  if (title) reply.pendingToolTitles.set(event.name, title);
   tryFlushPendingTools(reply);
   const loopGuard = advanceToolCallLoopGuard(ctx.state.toolCallStreak, event.name, event.args);
   ctx.state.toolCallStreak = loopGuard.streak;
@@ -420,7 +422,10 @@ async function stopStuckToolLoop(ctx: RunContext, toolName: string) {
   }
   await ctx.computer.checkpoint.flush();
   ctx.state.terminalCheckpointComplete = true;
-  const stuckText = loopGuardStopText(humanizeToolName(toolName), ctx.state.toolCallStreak.count);
+  const stuckText = loopGuardStopText(
+    toolDisplayName({ name: toolName, title: ctx.tools.connector.get(toolName)?.title }),
+    ctx.state.toolCallStreak.count,
+  );
   await ctx.settleRunningHelpers();
   const stopped = await deps.events.finalizeRun({
     spaceId: run.spaceId,

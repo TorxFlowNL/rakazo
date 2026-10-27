@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { isBuildId } from "@rakazo/contracts/client-build";
-import { webDarkTokens } from "@rakazo/ui-tokens";
+import type { BrandConfig } from "@rakazo/ui-tokens";
+import { brandManifestOverrides, webDarkTokens } from "@rakazo/ui-tokens";
 import type { Plugin, Rolldown } from "vite";
 import { CACHE_PREFIX } from "./service-worker.js";
 
@@ -9,13 +10,13 @@ const MANIFEST_FILE = "site.webmanifest";
 const PRECACHE_PLACEHOLDER = "__RAKAZO_SW_PRECACHE__";
 const CACHE_PLACEHOLDER = "__RAKAZO_SW_CACHE__";
 
-export function webManifest() {
+export function webManifest(brand: BrandConfig | null = null) {
   const icons = [192, 512].map((size) => ({
     src: `/icon-${size}.png`,
     sizes: `${size}x${size}`,
     type: "image/png",
   }));
-  return {
+  const upstream = {
     id: "/",
     name: "Rakazo",
     short_name: "Rakazo",
@@ -31,6 +32,7 @@ export function webManifest() {
       ...icons.map((icon) => ({ ...icon, purpose: "maskable" })),
     ],
   };
+  return brand ? { ...upstream, ...brandManifestOverrides(brand) } : upstream;
 }
 
 /**

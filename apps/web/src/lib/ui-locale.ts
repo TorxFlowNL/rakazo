@@ -1,4 +1,5 @@
 import { matchUiLocale } from "@rakazo/core";
+import { activeBrand } from "./brand";
 
 export const UI_LOCALES = [
   "en",
@@ -69,6 +70,7 @@ function readNavigatorLanguage(
 export type ResolveUiLocaleOptions = {
   stored?: string | null;
   envDefault?: string | null;
+  brandLocale?: string | null;
   navigatorLanguage?: string | null;
   storage?: Pick<Storage, "getItem"> | null;
   env?: { VITE_DEFAULT_UI_LOCALE?: string };
@@ -76,7 +78,7 @@ export type ResolveUiLocaleOptions = {
 };
 
 /**
- * Order: saved choice (`localStorage`) → `VITE_DEFAULT_UI_LOCALE` →
+ * Order: saved choice (`localStorage`) → the brand's language → `VITE_DEFAULT_UI_LOCALE` →
  * `navigator.language` → English.
  */
 export function resolveUiLocale(options: ResolveUiLocaleOptions = {}): UiLocale {
@@ -87,6 +89,10 @@ export function resolveUiLocale(options: ResolveUiLocaleOptions = {}): UiLocale 
           options.storage ?? (typeof localStorage !== "undefined" ? localStorage : null),
         );
   if (stored) return normalizeUiLocale(stored);
+
+  const brandLocale =
+    options.brandLocale !== undefined ? options.brandLocale : activeBrand()?.locale;
+  if (brandLocale) return normalizeUiLocale(brandLocale);
 
   const envDefault =
     options.envDefault !== undefined

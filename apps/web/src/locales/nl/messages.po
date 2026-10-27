@@ -20,12 +20,12 @@ msgstr " (ongelezen)"
 #. placeholder {0}: pinned.length
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "{0, plural, one {# bot has its own model:} other {# bots have their own model:}}"
-msgstr ""
+msgstr "{0, plural, one {# bot heeft een eigen model:} other {# bots hebben een eigen model:}}"
 
 #. placeholder {0}: pinned.length
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "{0, plural, one {Switch # bot to the space default?} other {Switch # bots to the space default?}}"
-msgstr ""
+msgstr "{0, plural, one {# bot overzetten naar de standaard van de ruimte?} other {# bots overzetten naar de standaard van de ruimte?}}"
 
 #. placeholder {0}: Math.ceil(oauth.expiresInSeconds / 60)
 #: src/pages/model-settings/connection-controls.tsx
@@ -128,6 +128,10 @@ msgstr "{amount} / {period}"
 msgid "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}"
 msgstr "{botCount, plural, one {{name} en de # bot verwijderen?} other {{name} en de # bots verwijderen?}}"
 
+#: src/components/AskCard.tsx
+msgid "{botName} wants to run “{approvalToolName}”"
+msgstr "{botName} wil “{approvalToolName}” uitvoeren"
+
 #: src/pages/shell/computer-view.tsx
 msgid "{botName}’s computer"
 msgstr "de computer van {botName}"
@@ -190,7 +194,7 @@ msgstr "{minutes}m geleden"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}"
-msgstr ""
+msgstr "{moved, plural, one {# bot gebruikt nu de standaard van de ruimte.} other {# bots gebruiken nu de standaard van de ruimte.}}"
 
 #: src/lib/activity-list-filters.ts
 msgid "{name} asked"
@@ -643,7 +647,7 @@ msgstr "Communicatie tussen bots in verschillende ruimtes toestaan"
 
 #: src/components/AskCard.tsx
 msgid "Allow for this chat"
-msgstr ""
+msgstr "Toestaan voor dit gesprek"
 
 #: src/components/AskCard.tsx
 msgid "Allow once"
@@ -655,7 +659,7 @@ msgstr "Schrijven toestaan"
 
 #: src/components/AskCard.tsx
 msgid "Allowed for this chat"
-msgstr ""
+msgstr "Toegestaan voor dit gesprek"
 
 #: src/components/AskCard.tsx
 msgid "Allowed once"
@@ -688,6 +692,10 @@ msgstr "Altijd toegestaan"
 #: src/lib/model-connection-preflight.ts
 msgid "An API key is stored for this provider, not a subscription sign-in."
 msgstr "Voor deze aanbieder is een API-sleutel opgeslagen, geen abonnementsaanmelding."
+
+#: src/pages/memory-providers/HonchoSettingsForm.tsx
+msgid "An existing Honcho peer to read from. It is never written to."
+msgstr "Een bestaande Honcho-peer om uit te lezen. Er wordt nooit naar geschreven."
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "An existing Honcho peer to read from. Rakazo never writes to it."
@@ -900,6 +908,7 @@ msgstr "Avatarstudio"
 
 #: src/pages/Auth.tsx
 #: src/pages/Board.tsx
+#: src/pages/McpOAuthCallback.tsx
 #: src/pages/NavLinkPage.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
@@ -977,7 +986,7 @@ msgstr "De bot kijkt alleen, handelt niet"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Bot models"
-msgstr ""
+msgstr "Botmodellen"
 
 #: src/pages/shell/computer-overlay.tsx
 msgid "Bot screen"
@@ -993,7 +1002,7 @@ msgstr "Model van de bot"
 
 #: src/components/SignupSurvey.tsx
 msgid "Both"
-msgstr ""
+msgstr "Beide"
 
 #: src/pages/Artifacts.tsx
 msgid "Bots"
@@ -1001,7 +1010,7 @@ msgstr "Bots"
 
 #: src/components/ModelCredits.tsx
 msgid "Bots and browser automation"
-msgstr ""
+msgstr "Bots en browserautomatisering"
 
 #: src/pages/Paywall.tsx
 msgid "Bots with their own computer and browser"
@@ -1221,7 +1230,7 @@ msgstr "Kies een nieuw wachtwoord"
 
 #: src/pages/Onboarding.tsx
 msgid "Choose a provider"
-msgstr ""
+msgstr "Kies een aanbieder"
 
 #: src/pages/shell/agent-import.tsx
 msgid "Choose backup"
@@ -1456,7 +1465,7 @@ msgstr "Verwijderen bevestigen"
 
 #: src/components/ConfirmIdentityDialog.tsx
 msgid "Confirm it's you"
-msgstr ""
+msgstr "Bevestig dat jij het bent"
 
 #: src/pages/AccountSettingsOverlay.tsx
 #: src/pages/Auth.tsx
@@ -1483,7 +1492,7 @@ msgstr "{selectedProviderName} verbinden"
 
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Connect a chat app"
-msgstr ""
+msgstr "Een chat-app koppelen"
 
 #: src/pages/Onboarding.tsx
 #: src/pages/shell/composer-error.tsx
@@ -1517,7 +1526,7 @@ msgstr "Geheugenaanbieder koppelen"
 
 #: src/components/ModelCredits.tsx
 msgid "Connect my own"
-msgstr ""
+msgstr "Mijn eigen koppelen"
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Connect OAuth"
@@ -1606,7 +1615,7 @@ msgstr "Doorgaan met {0}"
 
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Conversations"
-msgstr ""
+msgstr "Gesprekken"
 
 #: src/components/ComputersUnavailableHint.tsx
 #: src/components/markdown-copy.tsx
@@ -1666,7 +1675,7 @@ msgstr "Deze app autoriseren mislukt"
 
 #: src/components/ComputerDeviceSettings.tsx
 msgid "Could not change"
-msgstr ""
+msgstr "Wijzigen mislukt"
 
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Could not change password"
@@ -2053,7 +2062,7 @@ msgstr "Onderwijs starten mislukt"
 
 #: src/components/ComputerMaintenanceActions.tsx
 msgid "Could not stop computer"
-msgstr ""
+msgstr "Computer stoppen mislukt"
 
 #: src/components/AskCard.tsx
 msgid "Could not submit this answer"
@@ -2061,7 +2070,7 @@ msgstr "Dit antwoord insturen mislukt"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Could not switch {failedNames}. Try again."
-msgstr ""
+msgstr "{failedNames} kon niet worden omgezet. Probeer het opnieuw."
 
 #: src/pages/shell/use-computer.tsx
 msgid "Could not take control"
@@ -2390,7 +2399,7 @@ msgstr "{disconnectName} loskoppelen?"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Disconnect Self-hosted"
-msgstr ""
+msgstr "Zelf gehost loskoppelen"
 
 #: src/pages/model-settings/use-model-settings.ts
 msgid "Disconnected {disconnectName}."
@@ -2532,7 +2541,7 @@ msgstr "Dit e-mailadres mag niet worden geregistreerd"
 
 #: src/components/ConfirmIdentityDialog.tsx
 msgid "Email me a code"
-msgstr ""
+msgstr "Mail me een code"
 
 #: src/lib/user-error.ts
 msgid "Email verification required"
@@ -3195,7 +3204,7 @@ msgstr "Verlaten"
 
 #: src/components/ComputerDeviceSettings.tsx
 msgid "Let bots use this computer"
-msgstr ""
+msgstr "Bots deze computer laten gebruiken"
 
 #: src/pages/MemorySettingsOverlay.tsx
 msgid "Lets bots save and recall facts by meaning, alongside MEMORY.md."
@@ -3428,6 +3437,7 @@ msgstr "Leden ({0})"
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/agent-import.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Memory"
 msgstr "Geheugen"
 
@@ -3674,7 +3684,7 @@ msgstr "Geef deze routine een naam"
 
 #: src/pages/shell/create-bot-dialog.tsx
 msgid "Name your Bot"
-msgstr ""
+msgstr "Geef je bot een naam"
 
 #: src/lib/roster-status.ts
 msgid "Needs an answer"
@@ -3760,7 +3770,7 @@ msgstr "Volgende pagina"
 
 #: src/pages/SettingsOverlay.tsx
 msgid "Next settings sections"
-msgstr ""
+msgstr "Volgende instellingenonderdelen"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "No apps match your search."
@@ -3948,7 +3958,7 @@ msgstr "OAuth verlopen"
 
 #: src/components/ComputerDeviceSettings.tsx
 msgid "Offline"
-msgstr ""
+msgstr "Offline"
 
 #: src/pages/model-settings/connection-controls.tsx
 #: src/pages/Onboarding.tsx
@@ -4139,6 +4149,10 @@ msgid "Paste a replacement key"
 msgstr "Plak een vervangende sleutel"
 
 #: src/pages/model-settings/compatible-model-fields.tsx
+msgid "Paste the OpenAI-compatible address from your server. /v1 is added if needed."
+msgstr "Plak het OpenAI-compatibele adres van je server. /v1 wordt zo nodig toegevoegd."
+
+#: src/pages/model-settings/compatible-model-fields.tsx
 msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
 msgstr "Plak het OpenAI-compatibele adres van je server. Rakazo voegt zo nodig /v1 toe."
 
@@ -4161,7 +4175,7 @@ msgstr "Gepauzeerd"
 
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Pending"
-msgstr ""
+msgstr "In behandeling"
 
 #: src/pages/shell/bot-panel.tsx
 msgid "Permissions"
@@ -4173,7 +4187,7 @@ msgstr "Persona"
 
 #: src/components/SignupSurvey.tsx
 msgid "Personal"
-msgstr ""
+msgstr "Persoonlijk"
 
 #: src/components/call/VoiceChatCard.tsx
 msgid "Phone call"
@@ -4247,7 +4261,7 @@ msgstr "Vorige pagina"
 
 #: src/pages/SettingsOverlay.tsx
 msgid "Previous settings sections"
-msgstr ""
+msgstr "Vorige instellingenonderdelen"
 
 #: src/pages/Board.tsx
 msgid "Priority"
@@ -4558,7 +4572,7 @@ msgstr "Vraag een nieuwe code aan"
 
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Requests"
-msgstr ""
+msgstr "Verzoeken"
 
 #: src/pages/shell/message-cards.tsx
 msgid "Research & writing"
@@ -4595,7 +4609,7 @@ msgstr "Bezig met opnieuw instellen…"
 
 #: src/pages/shell/sidebar-layout.tsx
 msgid "Resize bots sidebar"
-msgstr ""
+msgstr "Zijbalk met bots verbreden of versmallen"
 
 #: src/pages/ResizableSidePanel.tsx
 msgid "Resize panel"
@@ -4802,7 +4816,7 @@ msgstr "Zeg ja of nee, of antwoord in een zin."
 
 #: src/components/ModelCredits.tsx
 msgid "Scheduled routines"
-msgstr ""
+msgstr "Geplande routines"
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Scopes (optional)"
@@ -4883,11 +4897,11 @@ msgstr "Verzenden"
 
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Send <0>{linkCode}</0> from {linkApp} within 10 minutes."
-msgstr ""
+msgstr "Stuur <0>{linkCode}</0> binnen 10 minuten vanuit {linkApp}."
 
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Send <0>{linkCode}</0> to <1>{linkAddress}</1> from {linkApp} within 10 minutes."
-msgstr ""
+msgstr "Stuur <0>{linkCode}</0> binnen 10 minuten vanuit {linkApp} naar <1>{linkAddress}</1>."
 
 #: src/components/AskCard.tsx
 msgid "Send answer"
@@ -4923,7 +4937,7 @@ msgstr "Bezig met verzenden…"
 
 #: src/components/AskCard.tsx
 msgid "Sent"
-msgstr ""
+msgstr "Verzonden"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Sentry alert"
@@ -4976,7 +4990,7 @@ msgstr "Vorm"
 #. placeholder {0}: index + 1
 #: src/pages/shell/avatar-studio-popover.tsx
 msgid "Shape {0}"
-msgstr ""
+msgstr "Vorm {0}"
 
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -5199,7 +5213,7 @@ msgstr "SSO is tijdelijk niet beschikbaar. Probeer het opnieuw."
 
 #: src/pages/shell/computer-overlay.tsx
 msgid "Start"
-msgstr ""
+msgstr "Starten"
 
 #: src/components/ModelCredits.tsx
 #: src/pages/Paywall.tsx
@@ -5239,7 +5253,7 @@ msgstr "Stoppen"
 
 #: src/components/ComputerMaintenanceActions.tsx
 msgid "Stop computer"
-msgstr ""
+msgstr "Computer stoppen"
 
 #: src/pages/shell/message-view.tsx
 msgid "Stop speaking"
@@ -5256,7 +5270,7 @@ msgstr "Gestopt."
 
 #: src/components/ComputerMaintenanceActions.tsx
 msgid "Stopping…"
-msgstr ""
+msgstr "Bezig met stoppen…"
 
 #: src/pages/McpServersOverlay.tsx
 msgid "Stored encrypted"
@@ -5313,7 +5327,7 @@ msgstr "Ondersteunt denken"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Switch"
-msgstr ""
+msgstr "Overzetten"
 
 #: src/pages/shell/command-palette.tsx
 msgid "Switch bot"
@@ -5381,6 +5395,10 @@ msgstr "Testrun"
 msgid "Testing…"
 msgstr "Bezig met testen…"
 
+#: src/components/AskCard.tsx
+msgid "The assistant wants to run “{approvalToolName}”"
+msgstr "De assistent wil “{approvalToolName}” uitvoeren"
+
 #: src/pages/shell/agent-import-undo.tsx
 msgid "The bot and what its import added will be removed."
 msgstr "De bot en wat de import heeft toegevoegd worden verwijderd."
@@ -5430,7 +5448,7 @@ msgstr "De gekozen geheugenaanbieder is niet beschikbaar in deze build."
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Their own model is cleared. You can pick one again in each bot."
-msgstr ""
+msgstr "Hun eigen model is gewist. Je kunt per bot opnieuw een model kiezen."
 
 #: src/pages/shell/agent-import.tsx
 msgid "These files are too large to import."
@@ -5508,6 +5526,10 @@ msgstr "Hiermee worden alle {0} versies van dit artefact verwijderd. Dit kan nie
 msgid "This file is not valid UTF-8 text."
 msgstr "Dit bestand is geen geldige UTF-8-tekst."
 
+#: src/pages/memory-providers/HonchoSettingsForm.tsx
+msgid "This ID is reserved. Choose another peer."
+msgstr "Deze ID is gereserveerd. Kies een andere peer."
+
 #: src/lib/agent-import-errors.ts
 msgid "This import changed. Try again."
 msgstr "Deze import is gewijzigd. Probeer het opnieuw."
@@ -5577,6 +5599,10 @@ msgstr "Deze server is al gekoppeld. Koppel hem eerst los om opnieuw te autorise
 #: src/pages/model-settings/connection-controls.tsx
 msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
 msgstr "Deze abonnementsaanmelding is nog niet beschikbaar in Rakazo. Gebruik een implementatiegegeven of kies een andere aanbieder."
+
+#: src/pages/model-settings/connection-controls.tsx
+msgid "This subscription sign-in is not available yet. Use a deployment credential or choose another provider."
+msgstr "Inloggen met dit abonnement is nog niet beschikbaar. Gebruik een inloggegeven van de omgeving of kies een andere aanbieder."
 
 #: src/pages/Artifacts.tsx
 msgid "This week"
@@ -5868,7 +5894,7 @@ msgstr ""
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Use space default"
-msgstr ""
+msgstr "Standaard van de ruimte gebruiken"
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "Use up to 512 letters, digits, _ or -."
@@ -5876,7 +5902,7 @@ msgstr "Gebruik maximaal 512 letters, cijfers, _ of -."
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "User peer"
-msgstr ""
+msgstr "Gebruikerspeer"
 
 #: src/components/AskCard.tsx
 #: src/components/VaultSettings.tsx
@@ -6052,7 +6078,7 @@ msgstr "Wordt niet gedaan"
 
 #: src/components/SignupSurvey.tsx
 msgid "Work"
-msgstr ""
+msgstr "Werk"
 
 #: src/pages/shell/agent-import.tsx
 msgid "Working instructions"

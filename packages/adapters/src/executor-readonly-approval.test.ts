@@ -63,6 +63,7 @@ type Effect = {
 
 function fixture({
   name = "demo_get_item",
+  title,
   catalog = false,
   readOnly = true,
   rules = [] as ActionApprovalRule[],
@@ -121,6 +122,8 @@ function fixture({
   /** Simulates another writer landing between the save's read and its commit. */
   advanceRevisionAfterRead?: boolean;
   name?: string;
+  /** The title the connector's server gave the tool. */
+  title?: string;
   catalog?: boolean;
   readOnly?: boolean;
   rules?: ActionApprovalRule[];
@@ -140,6 +143,7 @@ function fixture({
   let taskPrompt = prompt;
   const tool: ConnectorTool = {
     name,
+    ...(title ? { title } : {}),
     description: "Read an item",
     readOnly,
     inputSchema: {
@@ -2506,5 +2510,48 @@ describe("user_computer_shell", () => {
       { error: "The user's computer is not connected. Ask them to open the Rakazo desktop app." },
     ]);
     expect(requests).toEqual([]);
+  });
+});
+
+describe("tool titles on approval cards", () => {
+  const pausedCard = (f: ReturnType<typeof fixture>) =>
+    (
+      f.pauseRunForInput.mock.calls as unknown as [{ blocks: Array<Record<string, unknown>> }][]
+    )[0]?.[0].blocks[0];
+
+  it.each([false, true])(
+    "names a write tool by its server title instead of its id (catalog: %s)",
+    async (catalog) => {
+      const f = fixture({
+        catalog,
+        name: "mcp__demo__request_appointment",
+        title: "Afspraakverzoek aanmaken",
+        readOnly: false,
+      });
+      await f.run();
+      expect(f.execute).not.toHaveBeenCalled();
+      expect(f.pauseRunForInput).toHaveBeenCalledOnce();
+      expect(pausedCard(f)).toMatchObject({
+        text: "Review before Afspraakverzoek aanmaken",
+        tool: { name: "mcp__demo__request_appointment", title: "Afspraakverzoek aanmaken" },
+      });
+    },
+  );
+
+  it("keeps the tool id in the text but still marks a prefixed tool without a title", async () => {
+    const f = fixture({ name: "mcp__demo__request_appointment", readOnly: false });
+    await f.run();
+    expect(pausedCard(f)).toMatchObject({
+      text: "Review before mcp__demo__request_appointment",
+      tool: { name: "mcp__demo__request_appointment" },
+    });
+    expect(pausedCard(f)).not.toHaveProperty("tool.title");
+  });
+
+  it("adds no tool field to a built-in tool's card", async () => {
+    const f = fixture({ builtin: true, sourceRole: "user", prompt: "Read the page" });
+    f.setCalls([{ name: "web_fetch", args: { url: "https://attacker.test/" }, executionId: "c1" }]);
+    await f.run();
+    expect(pausedCard(f)).not.toHaveProperty("tool");
   });
 });

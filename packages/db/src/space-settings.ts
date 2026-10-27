@@ -155,6 +155,7 @@ async function copyAccountIntoSpace(tx: CopyClient, scope: Scope, setting: Space
           effect: rule.effect,
           matchKind: rule.matchKind,
           matchValue: rule.matchValue,
+          source: rule.source,
         })),
       });
     }

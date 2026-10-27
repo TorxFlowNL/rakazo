@@ -133,6 +133,32 @@ export function safeRedirectPath(value: string | undefined): string {
   }
 }
 
+/** UI languages of the TorxFlow dashboard, as Rakazo's locale ids. */
+export type TorxflowSsoLocale = "nl" | "en" | "zh-CN";
+
+/**
+ * The workspace language for the dashboard's `lang` value: `zh` is Simplified Chinese, `nl` and
+ * `en` map to themselves, and anything else is Dutch, the language of the garages.
+ */
+export function torxflowSsoLocale(value: string): TorxflowSsoLocale {
+  const language = value.trim().toLowerCase().replace(/_/g, "-").split("-")[0];
+  if (language === "en") return "en";
+  if (language === "zh") return "zh-CN";
+  return "nl";
+}
+
+/**
+ * The landing path with the language the client adopts (`lang`, removed again once read). No
+ * language leaves the path as the dashboard asked.
+ */
+export function ssoLandingPath(redirect: string | undefined, lang: string | undefined): string {
+  const path = safeRedirectPath(redirect);
+  if (lang === undefined) return path;
+  const url = new URL(path, "http://torxflow.invalid");
+  url.searchParams.set("lang", torxflowSsoLocale(lang));
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export interface TorxflowProvisionInput {
   userId: string;
   email: string;
@@ -160,7 +186,7 @@ const unauthorized = (code: string) =>
   });
 
 /**
- * `GET /torxflow/sso?token=<jwt>&redirect=<path>`: signs a TorxFlow user in from a short-lived
+ * `GET /torxflow/sso?token=<jwt>&redirect=<path>&lang=<nl|en|zh>`: signs a TorxFlow user in from a short-lived
  * token TorxFlow signs with a shared secret. TorxFlow is the identity provider on this
  * deployment, so its verified email links to an existing account and an unknown one is created
  * without the signup policy, which governs self-service signups only.
@@ -176,6 +202,7 @@ export function torxflowSso(prisma: PrismaClient, options: TorxflowSsoOptions) {
           query: z.object({
             token: z.string().max(4096),
             redirect: z.string().max(2048).optional(),
+            lang: z.string().max(32).optional(),
           }),
         },
         async (ctx) => {
@@ -280,7 +307,7 @@ export function torxflowSso(prisma: PrismaClient, options: TorxflowSsoOptions) {
             userId: user.id,
             metadata: { method: "torxflow" },
           });
-          throw ctx.redirect(safeRedirectPath(ctx.query.redirect));
+          throw ctx.redirect(ssoLandingPath(ctx.query.redirect, ctx.query.lang));
         },
       ),
     },

@@ -23,6 +23,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
+import { showMarketing } from "../lib/brand-chrome";
 import { useSidebarUpdate } from "./DesktopUpdates";
 import { IconTooltip } from "./IconTooltip";
 
@@ -156,24 +157,28 @@ export function SidebarFooter({
               <Gauge className="text-muted-foreground" strokeWidth={1.75} />
               <Trans>Usage</Trans>
             </Button>
-            <a
-              className={`${buttonVariants({ variant: "ghost" })} h-9 w-full justify-start gap-2.5 font-normal`}
-              href={/Android/i.test(navigator.userAgent) ? ANDROID_APK_URL : IOS_APP_STORE_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Smartphone className="text-muted-foreground" strokeWidth={1.75} />
-              <Trans>Get the mobile app</Trans>
-            </a>
-            <a
-              className={`${buttonVariants({ variant: "ghost" })} h-9 w-full justify-start gap-2.5 font-normal`}
-              href="https://github.com/elie222/rakazo/blob/main/docs/self-host.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <BookOpen className="text-muted-foreground" strokeWidth={1.75} />
-              <Trans>Docs</Trans>
-            </a>
+            {showMarketing() ? (
+              <>
+                <a
+                  className={`${buttonVariants({ variant: "ghost" })} h-9 w-full justify-start gap-2.5 font-normal`}
+                  href={/Android/i.test(navigator.userAgent) ? ANDROID_APK_URL : IOS_APP_STORE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Smartphone className="text-muted-foreground" strokeWidth={1.75} />
+                  <Trans>Get the mobile app</Trans>
+                </a>
+                <a
+                  className={`${buttonVariants({ variant: "ghost" })} h-9 w-full justify-start gap-2.5 font-normal`}
+                  href="https://github.com/elie222/rakazo/blob/main/docs/self-host.md"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <BookOpen className="text-muted-foreground" strokeWidth={1.75} />
+                  <Trans>Docs</Trans>
+                </a>
+              </>
+            ) : null}
             {onBoard ? (
               <Button
                 variant="ghost"

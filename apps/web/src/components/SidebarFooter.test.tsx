@@ -26,6 +26,7 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   delete window.rakazoDesktop;
+  delete document.documentElement.dataset.brand;
   vi.restoreAllMocks();
 });
 async function render(
@@ -157,6 +158,20 @@ it("omits Board when unavailable", async () => {
   expect(document.querySelector('[data-slot="popover-content"]')?.textContent).not.toContain(
     "Board",
   );
+});
+
+it("keeps Connect apps but drops the app download and docs links when branded", async () => {
+  document.documentElement.dataset.brand = "torxflow";
+  await render("Demo User", undefined, vi.fn(), vi.fn());
+  const menu = document.querySelector('[data-slot="popover-content"]')!;
+  expect([...menu.querySelectorAll("button, a")].map((row) => row.textContent)).toEqual([
+    "Usage",
+    "Board",
+    "Artifacts",
+    "Settings",
+    "Log out",
+  ]);
+  expect(host.textContent).toContain("Connect apps");
 });
 
 it("offers the existing Android download on Android", async () => {

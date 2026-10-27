@@ -448,3 +448,72 @@ it("quotes a typed answer under the options it did not match", async () => {
   expect(container.querySelector('[data-testid="ask-answer"]')).toBeNull();
   expect(button("ASeoul")!.getAttribute("aria-pressed")).toBe("true");
 });
+
+const toolApproval: AskBlock = {
+  kind: "ask",
+  approvalEffectId: "effect-1",
+  text: "Review before Afspraakverzoek aanmaken",
+  tool: { name: "mcp__torxflow__request_appointment", title: "Afspraakverzoek aanmaken" },
+  status: "pending",
+  actions: [
+    { id: "allow", label: "Allow once" },
+    { id: "always", label: "Always allow this tool" },
+    { id: "deny", label: "Deny" },
+  ],
+};
+
+async function renderFor(block: AskBlock, botName?: string) {
+  await act(async () =>
+    root.render(
+      <AskCard
+        block={block}
+        botName={botName}
+        canAnswer
+        canDismiss
+        onAnswer={async () => undefined}
+        onDismiss={async () => undefined}
+      />,
+    ),
+  );
+}
+
+it("reads a tool approval as a sentence about the tool's title, naming the assistant", async () => {
+  await renderFor(toolApproval, "Tessa");
+  const sentence = container.querySelector('[data-testid="ask-tool-approval"]');
+  expect(sentence?.textContent).toBe("Tessa wants to run “Afspraakverzoek aanmaken”");
+  expect(container.textContent).not.toContain("mcp__");
+});
+
+it("uses a neutral phrase when the assistant's name is unknown", async () => {
+  await renderFor(toolApproval);
+  expect(container.querySelector('[data-testid="ask-tool-approval"]')?.textContent).toBe(
+    "The assistant wants to run “Afspraakverzoek aanmaken”",
+  );
+});
+
+it("spells out the tool id when its server gave no title", async () => {
+  await renderFor({ ...toolApproval, tool: { name: "mcp__torxflow__check_apk_status" } }, "Tessa");
+  expect(container.querySelector('[data-testid="ask-tool-approval"]')?.textContent).toBe(
+    "Tessa wants to run “Check apk status”",
+  );
+});
+
+it("never shows a raw tool id on an older approval that carries no tool field", async () => {
+  await renderFor({
+    ...toolApproval,
+    tool: undefined,
+    text: "Review before mcp__torxflow__check_apk_status",
+  });
+  expect(container.querySelector('[data-testid="ask-tool-approval"]')).toBeNull();
+  expect(container.textContent).toContain("Review before Check apk status");
+  expect(container.textContent).not.toContain("mcp__");
+});
+
+it("leaves a built-in tool's approval text as written", async () => {
+  await renderFor({
+    ...toolApproval,
+    tool: undefined,
+    text: "Review before web_fetch → example.test",
+  });
+  expect(container.textContent).toContain("Review before web_fetch → example.test");
+});

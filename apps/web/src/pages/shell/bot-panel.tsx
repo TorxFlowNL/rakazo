@@ -108,6 +108,7 @@ export function BotSettings({
   onUndoImport,
   focusModel = 0,
   onOpenConnections,
+  showComputer = true,
 }: {
   bot: Bot;
   focusModel?: number;
@@ -115,6 +116,8 @@ export function BotSettings({
   /** Unused: the skill sections read and save the shared cached skill list. */
   onSkillsChange?: (skills: AgentSkillCatalogEntry[]) => void;
   memoryProviderConfigured: boolean;
+  /** Whether this deployment has computers; the bot's computer mode is not offered without. */
+  showComputer?: boolean;
   onSave: (patch: {
     name?: string;
     title?: string;
@@ -640,36 +643,40 @@ export function BotSettings({
                 ) : null}
               </div>
             </div>
-            <SettingsGroup label={t`Computer`} plain>
-              <ComputerModePicker value={computerMode} onChange={setComputerMode} />
-              {memoryProviderConfigured ? (
-                <div className="mt-4 text-sm text-foreground">
-                  <Trans>Memory scope</Trans>
-                  <div className="mt-2 flex gap-2">
-                    {(
-                      [
-                        { value: null, label: t`Inherit default` },
-                        { value: "isolated" as const, label: t`Isolated` },
-                        { value: "shared" as const, label: t`Shared` },
-                      ] satisfies Array<{ value: "isolated" | "shared" | null; label: string }>
-                    ).map((option) => (
-                      <Toggle
-                        key={option.label}
-                        variant="outline"
-                        size="sm"
-                        pressed={memoryScope === option.value}
-                        onPressedChange={(pressed) => {
-                          if (pressed) setMemoryScope(option.value);
-                        }}
-                        className="flex-1 aria-pressed:border-foreground/40 aria-pressed:text-foreground"
-                      >
-                        {option.label}
-                      </Toggle>
-                    ))}
+            {showComputer || memoryProviderConfigured ? (
+              <SettingsGroup label={showComputer ? t`Computer` : t`Memory`} plain>
+                {showComputer ? (
+                  <ComputerModePicker value={computerMode} onChange={setComputerMode} />
+                ) : null}
+                {memoryProviderConfigured ? (
+                  <div className={`${showComputer ? "mt-4 " : ""}text-sm text-foreground`}>
+                    <Trans>Memory scope</Trans>
+                    <div className="mt-2 flex gap-2">
+                      {(
+                        [
+                          { value: null, label: t`Inherit default` },
+                          { value: "isolated" as const, label: t`Isolated` },
+                          { value: "shared" as const, label: t`Shared` },
+                        ] satisfies Array<{ value: "isolated" | "shared" | null; label: string }>
+                      ).map((option) => (
+                        <Toggle
+                          key={option.label}
+                          variant="outline"
+                          size="sm"
+                          pressed={memoryScope === option.value}
+                          onPressedChange={(pressed) => {
+                            if (pressed) setMemoryScope(option.value);
+                          }}
+                          className="flex-1 aria-pressed:border-foreground/40 aria-pressed:text-foreground"
+                        >
+                          {option.label}
+                        </Toggle>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : null}
-            </SettingsGroup>
+                ) : null}
+              </SettingsGroup>
+            ) : null}
             <SettingsGroup label={t`Voice`}>
               <label
                 htmlFor={`${ids}-auto-speak`}

@@ -109,6 +109,67 @@ export async function removeApprovalRule(
   }
 }
 
+/**
+ * Makes the rules a deployment owns for `source` exactly one `effect` rule per match value, in the
+ * copy that applies to the member. Only rows carrying `source` are ever removed. A match the
+ * member already has a rule for, whatever its effect, is theirs and is left as it is, so a
+ * rule they added or changed is never overridden or deleted. Matching ignores case, like
+ * rule resolution. Runs inside the caller's transaction and is safe to repeat.
+ */
+export async function syncManagedApprovalRules(
+  tx: ConfirmationsTx,
+  scope: Scope,
+  managed: { source: string; effect: string; matchKind: string; matchValues: string[] },
+  requested?: SettingsScope,
+): Promise<{ added: number; removed: number }> {
+  await lockSpaceSettings(tx, scope);
+  const account = (await confirmationsTarget(tx, scope, requested)) === "account";
+  const { source, effect, matchKind } = managed;
+  const wanted = new Map(managed.matchValues.map((value) => [value.toLowerCase(), value]));
+  const existing: Array<{ id: string; matchValue: string; effect: string; source: string | null }> =
+    account
+      ? await tx.userActionApprovalRule.findMany({ where: { userId: scope.userId, matchKind } })
+      : await tx.actionApprovalRule.findMany({
+          where: { spaceId: scope.spaceId, createdByUserId: scope.userId, matchKind },
+        });
+  const kept = new Set<string>();
+  const stale: string[] = [];
+  for (const row of existing) {
+    const value = row.matchValue.toLowerCase();
+    if (row.source !== source) {
+      kept.add(value);
+    } else if (row.effect === effect && wanted.has(value) && !kept.has(value)) {
+      kept.add(value);
+    } else {
+      stale.push(row.id);
+    }
+  }
+  const missing = [...wanted].filter(([value]) => !kept.has(value)).map(([, value]) => value);
+  if (stale.length) {
+    if (account) await tx.userActionApprovalRule.deleteMany({ where: { id: { in: stale } } });
+    else await tx.actionApprovalRule.deleteMany({ where: { id: { in: stale } } });
+  }
+  if (missing.length) {
+    const rows = missing.map((matchValue) => ({ effect, matchKind, matchValue, source }));
+    if (account) {
+      await tx.userActionApprovalRule.createMany({
+        data: rows.map((row) => ({ userId: scope.userId, ...row })),
+        skipDuplicates: true,
+      });
+    } else {
+      await tx.actionApprovalRule.createMany({
+        data: rows.map((row) => ({
+          spaceId: scope.spaceId,
+          createdByUserId: scope.userId,
+          ...row,
+        })),
+        skipDuplicates: true,
+      });
+    }
+  }
+  return { added: missing.length, removed: stale.length };
+}
+
 /** The saved auto review choice, or null when the member never chose. */
 export async function findAutoReviewPreference(
   prisma: ConfirmationsClient,

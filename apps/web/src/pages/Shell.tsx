@@ -47,6 +47,8 @@ import {
   subscribeBotsSidebarDensity,
 } from "../lib/bots-sidebar-density-pref";
 import { readBotsSidebarCollapsed, writeBotsSidebarCollapsed } from "../lib/bots-sidebar-pref";
+import { activeBrand } from "../lib/brand";
+import { showComputerUi, showMarketing } from "../lib/brand-chrome";
 import { setCallMinimized, startCall, useCallSession } from "../lib/call-session";
 import {
   getComposerEnterToSend,
@@ -252,8 +254,9 @@ function SpaceShell() {
     inGroup || routeChat?.groupId
       ? undefined
       : (bots.find((b) => b.id === (botId ?? routeChat?.botId)) ?? bots[0]);
+  // A brand keeps one accent for every conversation; elsewhere the bubble follows the bot's colour.
   const userBubble = useMemo(
-    () => (active ? chatUserBubbleColors(active.color, active.id) : undefined),
+    () => (active && !activeBrand() ? chatUserBubbleColors(active.color, active.id) : undefined),
     [active?.color, active?.id],
   );
   const activeGroup = groups.find((group) => group.id === groupId);
@@ -576,6 +579,11 @@ function SpaceShell() {
     importSetupOpen.current = false;
     void refreshActiveThread();
   }, [overlay, searchParams, refreshActiveThread]);
+  // No computers on this deployment, so a restored computer panel has nothing to show.
+  const computerUi = showComputerUi(bootstrapMe?.sandboxProvider);
+  useEffect(() => {
+    if (bootstrapMe && !computerUi && panel === "computer") setPanel(null);
+  }, [bootstrapMe, computerUi, panel, setPanel]);
   const stopTeaching = useCallback(async () => {
     const id = activeBotId.current;
     if (!id || teachBusy) return;
@@ -710,7 +718,7 @@ function SpaceShell() {
           if (active) void refreshThread(active.id);
         }}
       />
-      {bootstrapMe !== undefined ? (
+      {bootstrapMe !== undefined && computerUi ? (
         <HostComputerPrompt initialMe={bootstrapMe ?? undefined} onMeUpdated={setBootstrapMe} />
       ) : null}
       <ShellSidebar
@@ -809,6 +817,7 @@ function SpaceShell() {
             phoneCallsEnabled={Boolean(bootstrapMe?.phoneCallsEnabled)}
             inCall={Boolean(active) && call?.botId === active?.id}
             computerPanelOpen={panel === "computer"}
+            showComputer={computerUi}
             onOpenNavigation={() => setMobileSidebarOpen(true)}
             onOpenChatSettings={() => setPanel(inGroup ? "group-settings" : "settings")}
             onCall={(bot) => {
@@ -888,7 +897,7 @@ function SpaceShell() {
               speakingMessageId={speakingMessageId}
               onSpeak={speakMessage}
               onOpenComputer={computerControls.onOpenComputer}
-              onOpenImport={() => openImport(null, false)}
+              onOpenImport={showMarketing() ? () => openImport(null, false) : undefined}
               onOpenImportSetup={(target) => {
                 importSetupOpen.current = true;
                 if (target.kind === "models") openSettings("models");
@@ -915,7 +924,7 @@ function SpaceShell() {
               key={inGroup ? `group:${groupId}` : `bot:${active?.id}`}
               draftKey={inGroup ? `group:${groupId}` : `bot:${active?.id}`}
               enterToSend={enterToSend}
-              onImportAgent={(agent) => openImport(agent, false)}
+              onImportAgent={showMarketing() ? (agent) => openImport(agent, false) : undefined}
               activeName={inGroup ? (activeGroup?.name ?? activeSnapshot?.groupName) : active?.name}
               running={composerRunning}
               disabled={Boolean(recordingSkill)}
@@ -999,9 +1008,10 @@ function SpaceShell() {
         refreshActiveThread={refreshActiveThread}
         computer={computer}
         computerOpen={computerOpen}
+        showComputer={computerUi}
         booting={booting}
         computerPanel={
-          active ? (
+          active && computerUi ? (
             <ComputerPanel
               bot={active}
               computer={computer}

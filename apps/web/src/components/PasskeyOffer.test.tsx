@@ -61,6 +61,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  delete document.documentElement.dataset.brand;
 });
 
 async function render() {
@@ -78,6 +79,13 @@ it("offers a passkey on a new account's first session", async () => {
 
 it("stays hidden when the browser cannot use passkeys", async () => {
   vi.mocked(usePasskeysSupported).mockReturnValue(false);
+  await render();
+  expect(offer()).toBeNull();
+  expect(authClient.passkey.listUserPasskeys).not.toHaveBeenCalled();
+});
+
+it("never offers a passkey on a branded deployment", async () => {
+  document.documentElement.dataset.brand = "torxflow";
   await render();
   expect(offer()).toBeNull();
   expect(authClient.passkey.listUserPasskeys).not.toHaveBeenCalled();

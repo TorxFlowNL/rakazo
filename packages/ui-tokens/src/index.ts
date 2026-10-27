@@ -251,6 +251,164 @@ export const webLightTokens: WebColorTokens = { ...lightTokens, ...webLightOverr
 /** Dark palette. Prefer `tokensForAppearance` when theme-aware. */
 export const tokens = darkTokens;
 
+/** Server environment variable that picks a white-label look at runtime (one image, env decides). */
+export const BRAND_ENV_KEY = "RAKAZO_BRAND";
+
+export const BRAND_IDS = ["torxflow"] as const;
+
+export type BrandId = (typeof BRAND_IDS)[number];
+
+export interface BrandConfig {
+  id: BrandId;
+  /** The name in the tab title, install prompt and anywhere the product names itself. */
+  productName: string;
+  description: string;
+  /** The one appearance of this brand; the appearance switch is not offered. */
+  appearance: ResolvedAppearance;
+  /** UI language until the user, or the site that signed them in, picks another. */
+  locale: string;
+  /** Browser chrome colour around the page (`<meta name="theme-color">`, PWA manifest). */
+  themeColor: string;
+  /** Web font stack, for `--font-sans`. */
+  fontSans: string;
+  /** Icons for the tab and install prompt, relative to the site root. */
+  icons: { favicon: string; appleTouch: string; icon192: string; icon512: string };
+}
+
+/**
+ * The garage dashboard's palette: white surfaces on a slate-50 canvas, orange as the only accent,
+ * neutral ink. Values come from TorxFlow's globals.css and its dashboard nav (active row
+ * `#fff7ed` / `#c2410c`).
+ */
+export const torxflowTokens = {
+  background: "#F8FAFC",
+  dialog: "#FFFFFF",
+  foreground: "#09090B",
+  card: "#FFFFFF",
+  cardForeground: "#09090B",
+  popover: "#FFFFFF",
+  popoverForeground: "#09090B",
+  glassFill: "#FFFFFF",
+  glassStroke: "#E5E5E5",
+  primary: "#EA580C",
+  primaryForeground: "#FFFFFF",
+  primaryHover: "#C2410C",
+  primaryDisabled: "#EA580C59",
+  secondary: "#F5F5F5",
+  secondaryForeground: "#404040",
+  chatUser: "#EA580C",
+  chatUserForeground: "#FFFFFF",
+  muted: "#F5F5F5",
+  mutedForeground: "#737373",
+  faintForeground: "#A3A3A3",
+  accent: "#F5F5F5",
+  accentForeground: "#09090B",
+  destructive: "#DC2626",
+  destructiveFill: "#EF4444",
+  destructiveForeground: "#FFFFFF",
+  border: "#E5E5E5",
+  input: "#E5E5E5",
+  ring: "#EA580C",
+  sidebar: "#FFFFFF",
+  sidebarForeground: "#09090B",
+  sidebarBorder: "#E5E5E5",
+  sidebarAccent: "#FFF7ED",
+  sidebarAccentForeground: "#C2410C",
+  link: "#C2410C",
+  faviconPlate: "#FFFFFF",
+  success: "#15803D",
+  warning: "#B45309",
+  statusWorking: "#EA580C",
+  unread: "#EA580C",
+  workingDot: "#22C55E",
+  overlay: "#09090B66",
+  scrollbar: "#0000001F",
+  scrollbarHover: "#00000040",
+} as const satisfies WebColorTokens;
+
+export const torxflowBrand = {
+  id: "torxflow",
+  productName: "Assistenten",
+  description: "Jouw AI-collega's voor de garage.",
+  appearance: "light",
+  locale: "nl",
+  themeColor: "#FFFFFF",
+  fontSans: 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif',
+  icons: {
+    favicon: "/brand/torxflow/favicon.png",
+    appleTouch: "/brand/torxflow/apple-touch-icon.png",
+    icon192: "/brand/torxflow/icon-192.png",
+    icon512: "/brand/torxflow/icon-512.png",
+  },
+} as const satisfies BrandConfig;
+
+export const brands: Record<BrandId, BrandConfig & { tokens: WebColorTokens }> = {
+  torxflow: { ...torxflowBrand, tokens: torxflowTokens },
+};
+
+export function isBrandId(value: string | null | undefined): value is BrandId {
+  return (BRAND_IDS as readonly string[]).includes(value ?? "");
+}
+
+/**
+ * The brand an environment value names. Empty or unset is the upstream look (`null`); an unknown
+ * name throws, so a typo stops the server instead of silently serving the wrong product.
+ */
+export function parseBrand(raw: string | null | undefined): BrandConfig | null {
+  const value = raw?.trim().toLowerCase();
+  if (!value) return null;
+  if (!isBrandId(value)) {
+    throw new Error(`${BRAND_ENV_KEY} must be one of ${BRAND_IDS.join(", ")} (got "${raw}").`);
+  }
+  return brands[value];
+}
+
+/**
+ * Script text that runs before the first paint, ahead of `theme.js`: marks the document with the
+ * brand and its fixed appearance, and names the page. A file rather than inline script because
+ * the CSP blocks inline scripts.
+ */
+export function brandBootstrapScript(brand: BrandConfig): string {
+  const meta = (selector: string, content: string) =>
+    `set(${JSON.stringify(selector)},${JSON.stringify(content)});`;
+  const link = (selector: string, href: string) =>
+    `setLink(${JSON.stringify(selector)},${JSON.stringify(href)});`;
+  return `${[
+    "(() => {",
+    "  const root = document.documentElement;",
+    `  root.dataset.brand = ${JSON.stringify(brand.id)};`,
+    `  root.dataset.appearance = ${JSON.stringify(brand.appearance)};`,
+    `  document.title = ${JSON.stringify(brand.productName)};`,
+    '  const set = (selector, content) => document.querySelector(selector)?.setAttribute("content", content);',
+    '  const setLink = (selector, href) => document.querySelector(selector)?.setAttribute("href", href);',
+    `  ${meta('meta[name="theme-color"]', brand.themeColor.toLowerCase())}`,
+    `  ${meta('meta[name="apple-mobile-web-app-title"]', brand.productName)}`,
+    `  ${meta('meta[name="description"]', brand.description)}`,
+    `  ${link('link[rel="icon"][type="image/png"]', brand.icons.favicon)}`,
+    `  ${link('link[rel="apple-touch-icon"]', brand.icons.appleTouch)}`,
+    "})();",
+  ].join("\n")}\n`;
+}
+
+/** The web manifest of a branded install; `null` is the upstream manifest. */
+export function brandManifestOverrides(brand: BrandConfig) {
+  const icons = [
+    { src: brand.icons.icon192, sizes: "192x192", type: "image/png" },
+    { src: brand.icons.icon512, sizes: "512x512", type: "image/png" },
+  ];
+  return {
+    name: brand.productName,
+    short_name: brand.productName,
+    description: brand.description,
+    background_color: brand.themeColor.toLowerCase(),
+    theme_color: brand.themeColor.toLowerCase(),
+    icons: [
+      ...icons.map((icon) => ({ ...icon, purpose: "any" })),
+      ...icons.map((icon) => ({ ...icon, purpose: "maskable" })),
+    ],
+  };
+}
+
 export const RADIUS = "0.75rem";
 
 export const fontWeight = { regular: "400", medium: "500", semibold: "600" } as const;
@@ -373,11 +531,27 @@ function renderBlock(selector: string, colorScheme: ResolvedAppearance, palette:
   return `${selector} {\n  color-scheme: ${colorScheme};\n${lines.join("\n")}\n  --radius: ${RADIUS};\n}`;
 }
 
+/**
+ * A brand's tokens over the light palette. `:root[data-brand]` outranks `[data-theme]`, so the
+ * brand wins whichever appearance the document carries; regular text stays at 400 even on macOS,
+ * where upstream raises it to 420 for the system font.
+ */
+function renderBrandBlock(id: BrandId): string {
+  const brand = brands[id];
+  const selector = `:root[data-brand="${id}"]`;
+  const colors = renderBlock(selector, brand.appearance, brand.tokens).replace(
+    `\n  --radius: ${RADIUS};\n}`,
+    `\n  --radius: ${RADIUS};\n  --font-sans: ${brand.fontSans};\n  --font-weight-normal: 400;\n}`,
+  );
+  return `${colors}\n\n${selector}[data-os="mac"] {\n  --font-weight-normal: 400;\n}`;
+}
+
 /** The CSS in `tokens.css` (web and Electron). Generated from the web palettes so both stay in sync. */
 export function renderTokensCss(): string {
   return `${[
     "/* Generated by `pnpm --filter @rakazo/ui-tokens generate`. Edit src/index.ts instead. */",
     renderBlock(':root,\n[data-theme="dark"]', "dark", webDarkTokens),
     renderBlock('[data-theme="light"]', "light", webLightTokens),
+    ...(Object.keys(brands) as BrandId[]).map(renderBrandBlock),
   ].join("\n\n")}\n`;
 }

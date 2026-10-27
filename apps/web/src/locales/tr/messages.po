@@ -128,6 +128,10 @@ msgstr ""
 msgid "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}"
 msgstr "{botCount, plural, other {{name} ve # botu silinsin mi?}}"
 
+#: src/components/AskCard.tsx
+msgid "{botName} wants to run “{approvalToolName}”"
+msgstr ""
+
 #: src/pages/shell/computer-view.tsx
 msgid "{botName}’s computer"
 msgstr "{botName} adlı botun bilgisayarı"
@@ -690,6 +694,10 @@ msgid "An API key is stored for this provider, not a subscription sign-in."
 msgstr "Bu sağlayıcı için abonelik girişi değil, bir API anahtarı saklanıyor."
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
+msgid "An existing Honcho peer to read from. It is never written to."
+msgstr ""
+
+#: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "An existing Honcho peer to read from. Rakazo never writes to it."
 msgstr "Verilerin okunacağı mevcut bir Honcho eşi. Rakazo bu eşe asla veri yazmaz."
 
@@ -900,6 +908,7 @@ msgstr "Avatar Stüdyosu"
 
 #: src/pages/Auth.tsx
 #: src/pages/Board.tsx
+#: src/pages/McpOAuthCallback.tsx
 #: src/pages/NavLinkPage.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
@@ -3428,6 +3437,7 @@ msgstr ""
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/agent-import.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Memory"
 msgstr "Hafıza"
 
@@ -4137,6 +4147,10 @@ msgstr ""
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste a replacement key"
 msgstr "Yeni bir anahtar yapıştır"
+
+#: src/pages/model-settings/compatible-model-fields.tsx
+msgid "Paste the OpenAI-compatible address from your server. /v1 is added if needed."
+msgstr ""
 
 #: src/pages/model-settings/compatible-model-fields.tsx
 msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
@@ -5381,6 +5395,10 @@ msgstr ""
 msgid "Testing…"
 msgstr "Test ediliyor…"
 
+#: src/components/AskCard.tsx
+msgid "The assistant wants to run “{approvalToolName}”"
+msgstr ""
+
 #: src/pages/shell/agent-import-undo.tsx
 msgid "The bot and what its import added will be removed."
 msgstr "Bot ve içe aktarmanın eklediği her şey kaldırılacak."
@@ -5508,6 +5526,10 @@ msgstr ""
 msgid "This file is not valid UTF-8 text."
 msgstr ""
 
+#: src/pages/memory-providers/HonchoSettingsForm.tsx
+msgid "This ID is reserved. Choose another peer."
+msgstr ""
+
 #: src/lib/agent-import-errors.ts
 msgid "This import changed. Try again."
 msgstr "Bu içe aktarma değişti. Yeniden dene."
@@ -5577,6 +5599,10 @@ msgstr "Bu sunucu zaten bağlı. Yeniden yetkilendirmek için önce bağlantıs�
 #: src/pages/model-settings/connection-controls.tsx
 msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
 msgstr "Bu abonelik girişi Rakazo'da henüz kullanılamıyor. Bir dağıtım kimlik bilgisi kullan veya başka bir sağlayıcı seç."
+
+#: src/pages/model-settings/connection-controls.tsx
+msgid "This subscription sign-in is not available yet. Use a deployment credential or choose another provider."
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "This week"

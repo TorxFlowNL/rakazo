@@ -40,6 +40,7 @@ export function ShellSidePanel({
   refreshActiveThread,
   computer,
   computerOpen,
+  showComputer,
   booting,
   computerPanel,
   routineEditorProps,
@@ -71,6 +72,8 @@ export function ShellSidePanel({
   refreshActiveThread: () => Promise<void>;
   computer: ComputerStatus | null;
   computerOpen: boolean;
+  /** Whether this deployment has computers: the computer panel, its toggle and the bot's mode. */
+  showComputer: boolean;
   booting: boolean;
   computerPanel: ReactNode;
   routineEditorProps: ComponentProps<typeof RoutineEditor> | null;
@@ -126,7 +129,7 @@ export function ShellSidePanel({
                     }}
                   />
                 ) : null}
-                {active ? (
+                {active && showComputer ? (
                   <Button
                     variant="ghost"
                     size="icon-sm"
@@ -218,6 +221,7 @@ export function ShellSidePanel({
               key={active.id}
               bot={active}
               focusModel={modelFocusRequest}
+              showComputer={showComputer}
               onOpenConnections={() => openSettings("models")}
               memoryProviderConfigured={memoryProviderConfigured}
               onSkillsChange={setAgentSkills}

@@ -4,6 +4,23 @@
 @source "../../packages/ui-web/src/**/*.{ts,tsx}";
 @source "./src/**/*.{ts,tsx}";
 
+/* Inter (OFL) for a branded deployment, whose tokens name it as --font-sans. The upstream look
+   never uses it, so its file is only fetched when a brand asks for it. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/inter-latin-variable.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* `brand:` utilities apply only on a branded deployment (RAKAZO_BRAND, see lib/brand.ts): the
+   server marks the document with data-brand, so upstream's look is untouched without it. */
+@custom-variant brand (:where(:root[data-brand]) &);
+
 html,
 body,
 #root {

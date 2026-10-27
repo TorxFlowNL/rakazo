@@ -5,6 +5,7 @@ import {
   removeApprovalRule,
   saveApprovalRule,
   saveAutoReviewPreference,
+  syncManagedApprovalRules,
 } from "./approval-settings.js";
 import type { PrismaClient } from "./client.js";
 
@@ -14,6 +15,7 @@ const rule = { effect: "always_allow", matchKind: "tool", matchValue: "send" };
 function confirmationsClient({ overridden = false } = {}) {
   const table = () => ({
     findMany: vi.fn().mockResolvedValue([]),
+    createMany: vi.fn().mockResolvedValue({ count: 0 }),
     findUnique: vi.fn().mockResolvedValue(null),
     upsert: vi.fn().mockResolvedValue({ id: "row" }),
     deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -91,6 +93,114 @@ describe("approval rules", () => {
     expect(client.spaceSettingOverride.findUnique).not.toHaveBeenCalled();
     expect(client.userActionApprovalRule.findMany).toHaveBeenCalled();
     expect(client.actionApprovalRule.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("managed approval rules", () => {
+  const managed = {
+    source: "deployment",
+    effect: "always_allow",
+    matchKind: "tool",
+    matchValues: ["mcp__x__read", "mcp__x__list"],
+  };
+  const row = (id: string, matchValue: string, source: string | null, effect = "always_allow") => ({
+    id,
+    matchValue,
+    effect,
+    source,
+  });
+
+  it("creates what is missing in the account copy, scoped to the member and match kind", async () => {
+    const client = confirmationsClient();
+
+    await expect(syncManagedApprovalRules(client.prisma, scope, managed)).resolves.toEqual({
+      added: 2,
+      removed: 0,
+    });
+
+    expect(client.userActionApprovalRule.findMany).toHaveBeenCalledWith({
+      where: { userId: "user", matchKind: "tool" },
+    });
+    expect(client.userActionApprovalRule.createMany).toHaveBeenCalledWith({
+      data: managed.matchValues.map((matchValue) => ({
+        userId: "user",
+        effect: "always_allow",
+        matchKind: "tool",
+        matchValue,
+        source: "deployment",
+      })),
+      skipDuplicates: true,
+    });
+    expect(client.userActionApprovalRule.deleteMany).not.toHaveBeenCalled();
+    expect(client.actionApprovalRule.createMany).not.toHaveBeenCalled();
+  });
+
+  it("removes only its own stale rows and leaves the member's, creating nothing twice", async () => {
+    const client = confirmationsClient();
+    client.userActionApprovalRule.findMany.mockResolvedValue([
+      row("ours-kept", "mcp__x__read", "deployment"),
+      row("ours-stale", "mcp__x__gone", "deployment"),
+      // Another source, and a member's own, are never removed even though not wanted.
+      row("other-source", "mcp__x__old", "another"),
+      row("theirs", "mcp__x__also", null),
+      // The member's own rule, in another case, already covers this match.
+      row("theirs-cased", "MCP__X__LIST", null, "deny"),
+    ]);
+
+    await expect(syncManagedApprovalRules(client.prisma, scope, managed)).resolves.toEqual({
+      added: 0,
+      removed: 1,
+    });
+
+    expect(client.userActionApprovalRule.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["ours-stale"] } },
+    });
+    expect(client.userActionApprovalRule.createMany).not.toHaveBeenCalled();
+  });
+
+  it("drops a managed row whose effect no longer matches and writes the right one", async () => {
+    const client = confirmationsClient();
+    client.userActionApprovalRule.findMany.mockResolvedValue([
+      row("ours-wrong", "mcp__x__read", "deployment", "require_approval"),
+      row("ours-kept", "mcp__x__list", "deployment"),
+    ]);
+
+    await syncManagedApprovalRules(client.prisma, scope, managed);
+
+    expect(client.userActionApprovalRule.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["ours-wrong"] } },
+    });
+    expect(client.userActionApprovalRule.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ matchValue: "mcp__x__read", source: "deployment" })],
+      skipDuplicates: true,
+    });
+  });
+
+  it("works in the Space's own copy when it overrides confirmations", async () => {
+    const client = confirmationsClient({ overridden: true });
+
+    await syncManagedApprovalRules(client.prisma, scope, {
+      ...managed,
+      matchValues: ["mcp__x__a"],
+    });
+
+    expect(client.actionApprovalRule.findMany).toHaveBeenCalledWith({
+      where: { spaceId: "space", createdByUserId: "user", matchKind: "tool" },
+    });
+    expect(client.actionApprovalRule.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          spaceId: "space",
+          createdByUserId: "user",
+          effect: "always_allow",
+          matchKind: "tool",
+          matchValue: "mcp__x__a",
+          source: "deployment",
+        },
+      ],
+      skipDuplicates: true,
+    });
+    expect(client.userActionApprovalRule.createMany).not.toHaveBeenCalled();
   });
 });
 

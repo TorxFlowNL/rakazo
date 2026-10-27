@@ -124,6 +124,8 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     credential: botSecretDestinationSchema({ allowPrivateHttpOrigin: true }).optional(),
     /** On a fetch approval, the site an "always" answer allows. */
     site: z.string().optional(),
+    /** On a tool approval, the tool and the title its server gave it, so cards name it readably. */
+    tool: z.object({ name: z.string(), title: z.string().optional() }).optional(),
     status: z.enum(["pending", "answered"]).optional(),
     answer: z.string().optional(),
     /** A secret request the user dismissed instead of answering. */
@@ -199,6 +201,8 @@ export const MessageBlock = z.discriminatedUnion("kind", [
     /** Provider-generated tool status rather than assistant-authored narration. */
     activity: z.literal(true).optional(),
     pendingToolNames: z.array(z.string()).optional(),
+    /** Server-declared titles of the pending tools, keyed by tool name. */
+    pendingToolTitles: z.record(z.string(), z.string()).optional(),
   }),
   z.object({
     kind: z.literal("steps"),

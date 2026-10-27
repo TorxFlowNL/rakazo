@@ -61,6 +61,7 @@ import { MAX_PARALLEL_SUBAGENTS } from "./pi-runtime-subagent.js";
 import type { EventQueue, ToolCallBudget, ToolHost } from "./pi-runtime-tools.js";
 import {
   describeToolActivity,
+  normalizeAgentToolName,
   releaseToolCallBudget,
   toAgentTools,
   toolCallBudgetExceededMessage,
@@ -252,6 +253,12 @@ export class PiAgentRuntime implements AgentRuntime {
         };
         resumeHost = host;
         const tools = toAgentTools(toolDefs, host);
+        // Display titles by the name the model calls each tool by.
+        const toolTitles = new Map(
+          toolDefs.flatMap((tool) =>
+            tool.title ? [[normalizeAgentToolName(tool.name), tool.title] as const] : [],
+          ),
+        );
         const seenSteeringIds: string[] = [];
         const initialSteering = request.claimSteering ? await request.claimSteering([]) : [];
         let hasCurrentImages = Boolean(
@@ -590,7 +597,11 @@ export class PiAgentRuntime implements AgentRuntime {
             toolActivityShowing = true;
             queue.push({
               type: "progress",
-              text: describeToolActivity(event.toolName, event.args),
+              text: describeToolActivity(
+                event.toolName,
+                event.args,
+                toolTitles.get(event.toolName),
+              ),
               activity: true,
             });
           }

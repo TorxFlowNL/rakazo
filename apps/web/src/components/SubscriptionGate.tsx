@@ -6,6 +6,7 @@ import { createContext, Suspense, useContext, useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom";
 import { fetchAuthCapabilities } from "../lib/auth-capabilities";
 import { peekInitialBootstrap } from "../lib/bootstrap";
+import { showMarketing } from "../lib/brand-chrome";
 import { lazyComponent } from "../lib/preload-recovery";
 import { rpc } from "../lib/rpc";
 import type { SupportChat } from "../lib/support-chat";
@@ -72,7 +73,8 @@ export function SubscriptionGate({
     let active = true;
     fetchAuthCapabilities()
       .then(async (capabilities): Promise<GateState> => {
-        if (!capabilities.billing) return { kind: "open" };
+        // A branded deployment is not sold through Rakazo's plans, so it has no paywall or promo.
+        if (!capabilities.billing || !showMarketing()) return { kind: "open" };
         const me = await loadMe();
         if (!me.billingEnabled) return { kind: "open" };
         const status = await rpc.billing.status();

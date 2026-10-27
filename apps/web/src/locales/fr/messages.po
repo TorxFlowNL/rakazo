@@ -128,6 +128,10 @@ msgstr ""
 msgid "{botCount, plural, one {Delete {name} and its # bot?} other {Delete {name} and its # bots?}}"
 msgstr "{botCount, plural, one {Supprimer {name} et son # bot ?} other {Supprimer {name} et ses # bots ?}}"
 
+#: src/components/AskCard.tsx
+msgid "{botName} wants to run “{approvalToolName}”"
+msgstr ""
+
 #: src/pages/shell/computer-view.tsx
 msgid "{botName}’s computer"
 msgstr "Ordinateur de {botName}"
@@ -690,6 +694,10 @@ msgid "An API key is stored for this provider, not a subscription sign-in."
 msgstr "Une clé API est enregistrée pour ce fournisseur, et non une connexion par abonnement."
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
+msgid "An existing Honcho peer to read from. It is never written to."
+msgstr ""
+
+#: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "An existing Honcho peer to read from. Rakazo never writes to it."
 msgstr "Un pair Honcho existant à consulter. Rakazo n’y écrit jamais."
 
@@ -900,6 +908,7 @@ msgstr "Studio d'avatars"
 
 #: src/pages/Auth.tsx
 #: src/pages/Board.tsx
+#: src/pages/McpOAuthCallback.tsx
 #: src/pages/NavLinkPage.tsx
 #: src/pages/PluginsOverlay.tsx
 #: src/pages/RoutineEditor.tsx
@@ -3428,6 +3437,7 @@ msgstr ""
 #: src/pages/MemorySettingsOverlay.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/agent-import.tsx
+#: src/pages/shell/bot-panel.tsx
 msgid "Memory"
 msgstr "Mémoire"
 
@@ -4137,6 +4147,10 @@ msgstr ""
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Paste a replacement key"
 msgstr "Collez une clé de remplacement"
+
+#: src/pages/model-settings/compatible-model-fields.tsx
+msgid "Paste the OpenAI-compatible address from your server. /v1 is added if needed."
+msgstr ""
 
 #: src/pages/model-settings/compatible-model-fields.tsx
 msgid "Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed."
@@ -5381,6 +5395,10 @@ msgstr "Exécution de test"
 msgid "Testing…"
 msgstr "Test en cours…"
 
+#: src/components/AskCard.tsx
+msgid "The assistant wants to run “{approvalToolName}”"
+msgstr ""
+
 #: src/pages/shell/agent-import-undo.tsx
 msgid "The bot and what its import added will be removed."
 msgstr "Le bot et ce que son import a ajouté seront supprimés."
@@ -5508,6 +5526,10 @@ msgstr "Cela supprime toutes les {0} versions de cet artefact. Cette action est 
 msgid "This file is not valid UTF-8 text."
 msgstr "Ce fichier n'est pas un texte UTF-8 valide."
 
+#: src/pages/memory-providers/HonchoSettingsForm.tsx
+msgid "This ID is reserved. Choose another peer."
+msgstr ""
+
 #: src/lib/agent-import-errors.ts
 msgid "This import changed. Try again."
 msgstr "Cet import a changé. Réessayez."
@@ -5577,6 +5599,10 @@ msgstr "Ce serveur est déjà connecté. Déconnectez-le d'abord pour l'autorise
 #: src/pages/model-settings/connection-controls.tsx
 msgid "This subscription sign-in is not available in Rakazo yet. Use a deployment credential or choose another provider."
 msgstr "Cette connexion par abonnement n'est pas encore disponible dans Rakazo. Utilisez un identifiant de déploiement ou choisissez un autre fournisseur."
+
+#: src/pages/model-settings/connection-controls.tsx
+msgid "This subscription sign-in is not available yet. Use a deployment credential or choose another provider."
+msgstr ""
 
 #: src/pages/Artifacts.tsx
 msgid "This week"

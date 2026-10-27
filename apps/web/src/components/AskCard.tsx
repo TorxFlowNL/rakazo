@@ -4,10 +4,12 @@ import { ChatMarkdown } from "@rakazo/chat-ui/web";
 import type { ThreadMessage } from "@rakazo/contracts";
 import { BOT_INSTRUCTIONS_MAX_LENGTH, commandVariableName } from "@rakazo/contracts";
 import {
+  humanizeToolIdsInText,
   isApprovalAskBlock,
   isSecretAskBlock,
   resolveAskChoice,
   selectedAskActionLabel,
+  toolDisplayName,
 } from "@rakazo/core";
 import { Button, Input, Textarea } from "@rakazo/ui-web";
 import { Check } from "lucide-react";
@@ -67,12 +69,15 @@ function secretFieldLabel(purpose: AskBlock["purpose"]): string {
 
 export function AskCard({
   block,
+  botName,
   canAnswer,
   canDismiss,
   onAnswer,
   onDismiss,
 }: {
   block: AskBlock;
+  /** The assistant asking, named in a tool approval ("Tessa wants to run …"). */
+  botName?: string;
   canAnswer: boolean;
   canDismiss: boolean;
   onAnswer: (text: string, username?: string) => Promise<void>;
@@ -95,6 +100,8 @@ export function AskCard({
   const displayedAnswer = block.status === "answered" ? block.answer : acceptedAnswer;
   const displayedDismissed = block.status === "answered" ? block.dismissed : dismissed;
   const approvalActions = isApprovalAskBlock(block) ? block.actions : undefined;
+  // A tool approval reads as a sentence about the tool's title, never its raw id.
+  const approvalToolName = approvalActions && block.tool ? toolDisplayName(block.tool) : undefined;
   const askActions = block.actions;
   const displayActions = block.instructionUpdate
     ? askActions?.flatMap((action) =>
@@ -245,8 +252,14 @@ export function AskCard({
       <div className="text-[15.5px] leading-[1.5] text-foreground">
         {block.instructionUpdate ? (
           <Trans>Update instructions?</Trans>
+        ) : approvalToolName ? (
+          <span data-testid="ask-tool-approval">
+            {botName
+              ? t`${botName} wants to run “${approvalToolName}”`
+              : t`The assistant wants to run “${approvalToolName}”`}
+          </span>
         ) : (
-          <ChatMarkdown>{block.text}</ChatMarkdown>
+          <ChatMarkdown>{humanizeToolIdsInText(block.text)}</ChatMarkdown>
         )}
       </div>
       {secretInput && block.credential ? (

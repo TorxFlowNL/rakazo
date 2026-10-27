@@ -20,6 +20,7 @@ import {
   safeScreenProxyResponseHeaders,
   stripSensitiveHandshakeHeaders,
 } from "@rakazo/core/node/screen-proxy-response";
+import { BRAND_ENV_KEY, parseBrand } from "@rakazo/ui-tokens";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
@@ -28,6 +29,7 @@ import { defineConfig, loadEnv } from "vite";
 import { resolveScreenProxySecret } from "../../packages/core/src/secrets-guard.ts";
 import { createServiceLogger } from "../../packages/logging/src/env.ts";
 import { ASSET_ARCHIVE_DIR, archiveAssets } from "./src/asset-archive.js";
+import { rakazoBrand } from "./src/brand-plugin.js";
 import { appendForwardedFor } from "./src/forwarded-for.js";
 import { missingAssetMiddleware } from "./src/missing-asset.js";
 import {
@@ -520,10 +522,13 @@ export default defineConfig(({ command, mode }) => {
     ),
     crisp: parseCrispWebsiteId(process.env.CRISP_WEBSITE_ID ?? rootEnv.CRISP_WEBSITE_ID) !== null,
   });
+  // An unknown name throws here, so a typo stops the server instead of serving the wrong look.
+  const brand = parseBrand(process.env[BRAND_ENV_KEY] ?? rootEnv[BRAND_ENV_KEY]);
   return {
     build: { sourcemap: true },
     define: { "import.meta.env.RAKAZO_BUILD": JSON.stringify(buildId) },
     plugins: [
+      rakazoBrand(brand),
       {
         // The API reads this to name the deployed build, and a tab fetches it to confirm the
         // server already serves a newer build before it reloads.

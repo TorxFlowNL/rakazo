@@ -36,6 +36,12 @@ describe("describeToolActivity", () => {
     expect(describeToolActivity("mcp__demo-oauth__greet", {})).toBe("Using demo-oauth: greet");
   });
 
+  it("names an MCP tool by the title its server gave it", () => {
+    expect(describeToolActivity("mcp__torxflow__check_apk_status", {}, "APK-status opzoeken")).toBe(
+      "Using APK-status opzoeken",
+    );
+  });
+
   it("truncates long details and collapses whitespace", () => {
     const long = `x${"y".repeat(200)}`;
     const line = describeToolActivity("shell", { command: `a\n\t${long}` });

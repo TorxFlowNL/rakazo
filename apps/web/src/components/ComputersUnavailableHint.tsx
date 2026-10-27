@@ -1,17 +1,15 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Button, Spinner } from "@rakazo/ui-web";
 import { useEffect, useRef, useState } from "react";
+import { computersAreUnavailable } from "../lib/computer-availability";
 import type { SandboxAvailabilityPhase } from "../lib/computer-sandbox";
 import {
   classifySandboxProvider,
-  computersAreUnavailable,
   refreshSandboxFromServer,
   sandboxCheckFailureMessage,
   sandboxEnvGuidanceText,
 } from "../lib/computer-sandbox";
 import { SuccessPop } from "./ai/primitives";
-
-export { computersAreUnavailable } from "../lib/computer-sandbox";
 
 type ComputersUnavailableHintProps = {
   className?: string;

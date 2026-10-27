@@ -51,6 +51,30 @@ describe("buildApprovalAskBlock", () => {
     expect(block.detail).toContain("to: person@example.test");
   });
 
+  it("names a connector tool by the title its server gave it", () => {
+    const block = buildApprovalAskBlock(
+      "effect-1",
+      "mcp__torxflow__request_appointment",
+      { to: "Garage Wiefferink" },
+      [],
+      { tool: { name: "mcp__torxflow__request_appointment", title: "Afspraakverzoek aanmaken" } },
+    );
+
+    expect(block).toMatchObject({
+      kind: "ask",
+      text: "Review before Afspraakverzoek aanmaken → Garage Wiefferink",
+      tool: { name: "mcp__torxflow__request_appointment", title: "Afspraakverzoek aanmaken" },
+    });
+    if (block.kind !== "ask") throw new Error("expected ask block");
+    expect(block.text).not.toContain("mcp__");
+  });
+
+  it("keeps the tool name in the text, and no tool field, when no title is known", () => {
+    const block = buildApprovalAskBlock("effect-1", "mcp__tasklog__add_task", {}, []);
+    expect(block).toMatchObject({ text: "Review before mcp__tasklog__add_task" });
+    expect(block).not.toHaveProperty("tool");
+  });
+
   it("uses a one-time create or cancel choice for a new security boundary", () => {
     const block = buildApprovalAskBlock(
       "effect-1",

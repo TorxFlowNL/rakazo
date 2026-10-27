@@ -18,7 +18,7 @@ import { Button, Spinner } from "@rakazo/ui-web";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ComputerMaintenanceActions } from "../../components/ComputerMaintenanceActions";
-import { computersAreUnavailable } from "../../components/ComputersUnavailableHint";
+import { computersAreUnavailable } from "../../lib/computer-availability";
 import {
   bootComputerOnce,
   createScreenRefocus,

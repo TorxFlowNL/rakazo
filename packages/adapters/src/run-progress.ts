@@ -41,6 +41,7 @@ export async function createReplyState(
     midTurnProgressCount: 0,
     turnStartedAtMs: run.startedAt?.getTime() ?? Date.now(),
     pendingToolNames: [],
+    pendingToolTitles: new Map(),
     pendingProgress: "",
     lastProgressAt: 0,
     hasStreamedText: false,
@@ -90,9 +91,14 @@ export function flushPendingTools(reply: ReplyState) {
     reply.currentTextSegment = "";
   }
   for (const name of reply.pendingToolNames) {
-    reply.messageSegments = appendToolCallSegment(reply.messageSegments, name);
+    reply.messageSegments = appendToolCallSegment(
+      reply.messageSegments,
+      name,
+      reply.pendingToolTitles.get(name),
+    );
   }
   reply.pendingToolNames = [];
+  reply.pendingToolTitles.clear();
 }
 
 export function tryFlushPendingTools(reply: ReplyState) {

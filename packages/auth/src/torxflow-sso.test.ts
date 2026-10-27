@@ -1,7 +1,13 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { createAuth } from "./index.js";
-import { safeRedirectPath, TorxflowTokenError, verifyTorxflowToken } from "./torxflow-sso.js";
+import {
+  safeRedirectPath,
+  ssoLandingPath,
+  TorxflowTokenError,
+  torxflowSsoLocale,
+  verifyTorxflowToken,
+} from "./torxflow-sso.js";
 
 // Better Auth's real routes over its offline memory adapter. The memory adapter accepts a
 // repeated primary key, which Postgres rejects; the wrapper restores that so a reserved
@@ -165,10 +171,11 @@ function fixture({
     logger: { level: "error", log },
     torxflow: withTorxflow ? { secret, provision } : undefined,
   });
-  const sso = (token: string, redirect?: string) => {
+  const sso = (token: string, redirect?: string, lang?: string) => {
     const url = new URL(`${baseURL}/api/auth/torxflow/sso`);
     url.searchParams.set("token", token);
     if (redirect !== undefined) url.searchParams.set("redirect", redirect);
+    if (lang !== undefined) url.searchParams.set("lang", lang);
     return auth.handler(new Request(url));
   };
   const fresh = (overrides: Record<string, unknown> = {}) =>
@@ -232,6 +239,25 @@ describe("TorxFlow SSO endpoint", () => {
       const response = await f.sso(f.fresh(), redirect);
       expect(response.headers.get("location")).toBe("/");
     }
+  });
+
+  it.each([
+    ["nl", "/?lang=nl"],
+    ["en", "/?lang=en"],
+    ["zh", "/?lang=zh-CN"],
+    ["fr", "/?lang=nl"],
+    ["", "/?lang=nl"],
+  ])("hands the dashboard language %j to the workspace as %s", async (lang, location) => {
+    const f = fixture();
+    const response = await f.sso(f.fresh(), "/", lang);
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(location);
+  });
+
+  it("keeps the landing path's own query when it adds the language", async () => {
+    const f = fixture();
+    const response = await f.sso(f.fresh(), "/app/x?m=1#top", "en");
+    expect(response.headers.get("location")).toBe("/app/x?m=1&lang=en#top");
   });
 
   it("signs the same person in again without a second user or account", async () => {
@@ -333,5 +359,28 @@ describe("TorxFlow SSO endpoint", () => {
     const f = fixture({ withTorxflow: false });
     expect((await f.sso(f.fresh())).status).toBe(404);
     expect(f.data.user).toHaveLength(0);
+  });
+});
+
+describe("TorxFlow SSO language", () => {
+  it.each([
+    ["nl", "nl"],
+    ["NL", "nl"],
+    ["en", "en"],
+    ["en-GB", "en"],
+    ["zh", "zh-CN"],
+    ["zh_TW", "zh-CN"],
+    ["de", "nl"],
+    ["", "nl"],
+    ["<script>", "nl"],
+  ])("maps %j to %s", (value, locale) => {
+    expect(torxflowSsoLocale(value)).toBe(locale);
+  });
+
+  it("adds the language only when the dashboard sent one, and never leaves the site", () => {
+    expect(ssoLandingPath("/app", undefined)).toBe("/app");
+    expect(ssoLandingPath("/app", "zh")).toBe("/app?lang=zh-CN");
+    expect(ssoLandingPath("https://evil.example/", "en")).toBe("/?lang=en");
+    expect(ssoLandingPath(undefined, "nl")).toBe("/?lang=nl");
   });
 });

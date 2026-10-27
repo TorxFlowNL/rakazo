@@ -13,6 +13,7 @@ export function ChatHeader({
   phoneCallsEnabled,
   inCall,
   computerPanelOpen,
+  showComputer,
   onOpenNavigation,
   onOpenChatSettings,
   onCall,
@@ -25,6 +26,8 @@ export function ChatHeader({
   phoneCallsEnabled: boolean;
   inCall: boolean;
   computerPanelOpen: boolean;
+  /** Whether this deployment has computers; without them there is no screen to open. */
+  showComputer: boolean;
   onOpenNavigation: () => void;
   onOpenChatSettings: () => void;
   onCall: (bot: Bot) => void;
@@ -79,7 +82,7 @@ export function ChatHeader({
             </Button>
           </IconTooltip>
         ) : null}
-        {!inGroup && active ? (
+        {showComputer && !inGroup && active ? (
           <IconTooltip label={t`Agent computer`}>
             <Button
               variant="floating"

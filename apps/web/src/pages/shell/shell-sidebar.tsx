@@ -17,6 +17,7 @@ import { SidebarFooter } from "../../components/SidebarFooter";
 import { useBilling } from "../../components/SubscriptionGate";
 import { formatBillingDate } from "../../lib/billing";
 import type { BotsSidebarDensity } from "../../lib/bots-sidebar-density-pref";
+import { showMarketing } from "../../lib/brand-chrome";
 import type { Panel } from "../../lib/right-panel-state";
 import { clearSpaceSelection } from "../../lib/rpc";
 import { useSignOut } from "../../lib/sign-out";
@@ -297,7 +298,7 @@ function ShellSidebarFooter({
   const day = freeUntil ? formatBillingDate(freeUntil, i18n.locale || "en") : "";
   return (
     <>
-      {freeUntil && !mini ? (
+      {freeUntil && !mini && showMarketing() ? (
         <div className="mx-2.5 flex items-center justify-between gap-2 ps-2.5 text-sm text-muted-foreground">
           <span className="min-w-0 truncate">
             <Trans>Free plan ends {day}</Trans>

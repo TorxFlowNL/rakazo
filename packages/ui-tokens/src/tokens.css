@@ -96,3 +96,57 @@
   --primary-disabled: #1c1c1c26;
   --radius: 0.75rem;
 }
+
+:root[data-brand="torxflow"] {
+  color-scheme: light;
+  --background: #f8fafc;
+  --dialog: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --glass-fill: #ffffff;
+  --glass-stroke: #e5e5e5;
+  --primary: #ea580c;
+  --primary-foreground: #ffffff;
+  --primary-hover: #c2410c;
+  --primary-disabled: #ea580c59;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #404040;
+  --chat-user: #ea580c;
+  --chat-user-foreground: #ffffff;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --faint-foreground: #a3a3a3;
+  --accent: #f5f5f5;
+  --accent-foreground: #09090b;
+  --destructive: #dc2626;
+  --destructive-fill: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #ea580c;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #09090b;
+  --sidebar-border: #e5e5e5;
+  --sidebar-accent: #fff7ed;
+  --sidebar-accent-foreground: #c2410c;
+  --link: #c2410c;
+  --favicon-plate: #ffffff;
+  --success: #15803d;
+  --warning: #b45309;
+  --status-working: #ea580c;
+  --unread: #ea580c;
+  --working-dot: #22c55e;
+  --overlay: #09090b66;
+  --scrollbar: #0000001f;
+  --scrollbar-hover: #00000040;
+  --radius: 0.75rem;
+  --font-sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-weight-normal: 400;
+}
+
+:root[data-brand="torxflow"][data-os="mac"] {
+  --font-weight-normal: 400;
+}

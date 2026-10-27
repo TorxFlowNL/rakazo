@@ -18,6 +18,8 @@ import {
   planActionGate,
   redactSecrets,
   resolveActionApprovalForTools,
+  stripToolPrefix,
+  toolDisplayName,
   toolRequiresApproval,
   toolRequiresExplicitApproval,
   unattendedTriggerToolRequiresApproval,
@@ -65,6 +67,14 @@ import { connectorTrustKeys } from "./run-trust.js";
 import { commandWatchFromTool } from "./schedule-tools.js";
 
 export type AppliedEffect = Awaited<ReturnType<typeof recordEffect>>;
+
+/** What the approval card is built from beyond the call itself. */
+type ApprovalCard = {
+  reviewReason: string | undefined;
+  summary: FleetCardSummary | undefined;
+  /** A single connector tool whose card names it by title instead of its raw id. */
+  tool: { name: string; title?: string } | undefined;
+};
 
 /** A tool call that passed its approval gate, as tool handlers receive it. */
 export interface ToolCall {
@@ -402,7 +412,18 @@ export async function gateToolCall(
     nextApprovedTool,
     bypassApproval: gateDecision === "allow" && gated,
   });
-  const card = { reviewReason, summary: request.fleetSummary };
+  const toolTitle = viaConnector
+    ? (resolvedTool ?? ctx.tools.connector.get(name))?.title
+    : undefined;
+  const card: ApprovalCard = {
+    reviewReason,
+    summary: request.fleetSummary,
+    // A Composio batch is named by the actions it runs, so only a single connector tool is retitled.
+    tool:
+      viaConnector && !composioBatch && (toolTitle || stripToolPrefix(name) !== name)
+        ? { name, ...(toolTitle ? { title: toolTitle } : {}) }
+        : undefined,
+  };
 
   if (applied?.duplicate) {
     const gate = resolveDuplicateEffectGate(applied.effect, name);
@@ -542,11 +563,7 @@ async function settleToolUncertainty(
 }
 
 /** Ask the owner through an approval card. Parallel calls share the first call's pause. */
-function requestApproval(
-  ctx: RunContext,
-  call: ToolCall,
-  card: { reviewReason: string | undefined; summary: FleetCardSummary | undefined },
-) {
+function requestApproval(ctx: RunContext, call: ToolCall, card: ApprovalCard) {
   const { approval } = ctx.state;
   // Parallel calls can need approval at once. Only the first saves the turn and shows
   // its card; the others wait for that pause. Otherwise a later call's save could make
@@ -556,11 +573,7 @@ function requestApproval(
   return approval.request;
 }
 
-async function showApprovalCard(
-  ctx: RunContext,
-  call: ToolCall,
-  card: { reviewReason: string | undefined; summary: FleetCardSummary | undefined },
-) {
+async function showApprovalCard(ctx: RunContext, call: ToolCall, card: ApprovalCard) {
   const { deps, run, runId, bot, thread } = ctx;
   const { name, args, executionId, applied } = call;
   if (!(await renewRunLease(deps, runId, ctx.workerId, ctx.fence))) {
@@ -602,7 +615,7 @@ async function showApprovalCard(
   await notifyRun(deps, run, {
     kind: "help",
     title: `${displayName(bot.name, "Bot")} needs approval`,
-    body: `Review before ${name}`,
+    body: `Review before ${card.tool ? toolDisplayName(card.tool) : name}`,
     botId: bot.id,
     threadId: thread.id,
   });

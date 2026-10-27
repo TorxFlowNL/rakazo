@@ -794,11 +794,14 @@ by name).
 | Variable | Service | Meaning |
 | --- | --- | --- |
 | `RAKAZO_CSP_FRAME_ANCESTORS` | web, caddy | Space-separated `https://` origins that may embed the app, for example `https://garage.example.com`. The policy becomes `frame-ancestors 'self' <origins>`. Unset keeps `'none'`. While it is set, `Caddyfile.prod` and `Caddyfile.cloudflare.example` stop sending `X-Frame-Options: SAMEORIGIN`, which would block the embedding. |
+| `RAKAZO_BRAND` | web | `torxflow` runs the web app as a native section of the garage dashboard: light TorxFlow palette, Inter, 12 px radius, Dutch by default, the name "Assistenten" instead of Rakazo, no appearance switch and no marketing, download or passkey prompts. Read when the web server starts (it serves `theme.js` and `site.webmanifest` itself), so the same image runs with and without it. Unset keeps Rakazo's own look; an unknown name stops the server. |
 | `TORXFLOW_SSO_SECRET` | api | At least 32 characters, the same value TorxFlow signs with. Enables `GET /api/auth/torxflow/sso`. |
 | `TORXFLOW_MCP_URL` | api | The garage's MCP endpoint, for example `https://garage.example.com/tessa/mcp`. Its persona is read from `<url>/persona`. |
 | `TORXFLOW_MCP_TOKEN` | api | Bearer token for both. Set together with `TORXFLOW_MCP_URL`. |
 
-Sign-in takes `?token=<jwt>&redirect=<path>`. The token is HS256 with `iss: "torxflow"`,
+Sign-in takes `?token=<jwt>&redirect=<path>&lang=<nl|en|zh>`. `lang` is the dashboard's language: the
+landing URL gets `?lang=nl`, `en` or `zh-CN` (anything else is `nl`), and a branded web app stores it
+as the user's language choice and removes it from the address. The token is HS256 with `iss: "torxflow"`,
 `aud: "rakazo"`, `iat`, `exp` (at most 120 seconds ahead), a single-use `jti`, `sub`, `email`,
 `name`, `tenantId`, `tenantSlug`, `tenantName` and `role` (`owner`, `admin` or `member`). It
 is refused when expired, replayed or signed with another key. `redirect` must be a path on this
@@ -816,6 +819,18 @@ first sign-in with the deployment's default model and the instructions from `<ur
 sign-ins create nothing new, retry whatever failed last time, and point the install at a rotated
 URL or token. A failure in this step is logged and never blocks sign-in. A user who already had a
 space before the first TorxFlow sign-in keeps it, and the garage space opens first.
+
+Read-only tools run without an approval card. Rakazo asks before any MCP tool whose name does not
+read like a lookup, whatever the server declares, so on each sign-in the API lists the tools at
+`TORXFLOW_MCP_URL` (same egress check as the persona) and gives the member one always-allow
+approval rule per tool that sets `annotations.readOnlyHint: true`, named `mcp__torxflow__<tool>`.
+The rules show under Settings, approval rules, and go in the member's copy that applies in the
+space. Write tools (no hint, or `false`) still ask. The rules are exact tool names, never a
+pattern. A tool that stops being read-only or disappears loses its rule on the next sign-in. Only
+rules provisioning wrote are touched (they carry `source = 'torxflow:read-only-tools'`): a rule a
+member made, including a block, is never changed. A member who deletes a provisioned rule gets
+it back at the next sign-in; to keep a lookup asking, they set a Require approval or Block rule
+for it instead. If the tools cannot be listed the failure is logged and existing rules stay.
 
 Both hosts have to be the same site (for example two subdomains of one registrable domain) so the
 `SameSite=Lax` session cookie is sent inside the frame.

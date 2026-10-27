@@ -4,6 +4,7 @@ import { Button } from "@rakazo/ui-web";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authClient } from "../lib/auth";
+import { showPasskeyOffer } from "../lib/brand-chrome";
 import {
   passkeyErrorText,
   passkeysChanged,
@@ -45,7 +46,8 @@ export function PasskeyOffer() {
 
   useEffect(() => {
     setOpen(false);
-    if (!supported || !key) return;
+    // A branded deployment signs people in through its own site, so a passkey has nothing to add.
+    if (!showPasskeyOffer() || !supported || !key) return;
     const offer = (passkeyCount: number) =>
       shouldOfferPasskey({
         userCreatedAt: new Date(userCreatedAt),

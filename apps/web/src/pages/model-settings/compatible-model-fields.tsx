@@ -14,6 +14,7 @@ import {
 } from "@rakazo/ui-web";
 import { ModelPreflightFeedback } from "../../components/ModelConnectionPreflightNotice";
 import { ModelHeadersEditor } from "../../components/ModelHeadersEditor";
+import { isBranded } from "../../lib/brand-chrome";
 
 import type { ModelSettingsState } from "./use-model-settings";
 
@@ -127,7 +128,9 @@ export function CompatibleModelFields({
           summary={<Trans>Setup help</Trans>}
         >
           <p className="mt-1">
-            {t`Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed.`}
+            {isBranded()
+              ? t`Paste the OpenAI-compatible address from your server. /v1 is added if needed.`
+              : t`Paste the OpenAI-compatible address from your server. Rakazo adds /v1 if needed.`}
           </p>
         </Disclosure>
       ) : null}

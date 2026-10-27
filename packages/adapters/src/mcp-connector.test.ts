@@ -74,8 +74,9 @@ function mcpFetch(
     tools?: Array<{
       name: string;
       description?: string;
+      title?: string;
       inputSchema: Record<string, unknown>;
-      annotations?: { readOnlyHint?: boolean };
+      annotations?: { readOnlyHint?: boolean; title?: string };
     }>;
     calls?: string[];
   },
@@ -2528,6 +2529,52 @@ it("preserves explicit MCP read-only annotations for unattended consumers", asyn
       botId: "bot-1",
       signal: new AbortController().signal,
     });
+    expect(tools.map((tool) => tool.readOnly)).toEqual([true, false, undefined]);
+  } finally {
+    await connector.close();
+  }
+});
+
+it("carries the title an MCP server gives each tool, preferring title over annotations.title", async () => {
+  const state = {
+    failNext: false,
+    initializations: 0,
+    tools: [
+      {
+        name: "check_apk_status",
+        title: "APK-status opzoeken",
+        inputSchema: { type: "object" },
+        annotations: { readOnlyHint: true, title: "Ignored annotation title" },
+      },
+      {
+        name: "request_appointment",
+        inputSchema: { type: "object" },
+        annotations: { readOnlyHint: false, title: "Afspraakverzoek aanmaken" },
+      },
+      { name: "plain", inputSchema: { type: "object" } },
+    ],
+  };
+  vi.stubGlobal("fetch", mcpFetch(state));
+  const connector = new McpConnector(
+    { botMcpServer: { findMany: vi.fn(async () => [ASSIGNMENT]) } } as never,
+    new EncryptedSecretStore("fake-key"),
+    { network: TEST_NETWORK },
+  );
+  try {
+    const tools = await connector.discoverTools({
+      operationId: "test",
+      traceId: "test",
+      spaceId: "w1",
+      userId: "u1",
+      botId: "bot-1",
+      signal: new AbortController().signal,
+    });
+    expect(tools.map((tool) => tool.title)).toEqual([
+      "APK-status opzoeken",
+      "Afspraakverzoek aanmaken",
+      undefined,
+    ]);
+    expect(tools[2]).not.toHaveProperty("title");
     expect(tools.map((tool) => tool.readOnly)).toEqual([true, false, undefined]);
   } finally {
     await connector.close();

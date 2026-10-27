@@ -100,7 +100,7 @@ vi.mock("../components/ApprovalRulesSettings", () => ({
 }));
 vi.mock("../components/VaultSettings", () => ({ VaultSettings: recordScope("vault") }));
 vi.mock("../components/ComputersUnavailableHint", () => ({
-  computersAreUnavailable: () => false,
+  ComputersUnavailableHint: () => null,
 }));
 
 import { SettingsOverlay } from "./SettingsOverlay";

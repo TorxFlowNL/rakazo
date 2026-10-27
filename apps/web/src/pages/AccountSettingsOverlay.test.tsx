@@ -124,6 +124,7 @@ import { GeneralSettingsPanels, UsageSettingsPanel } from "./AccountSettingsOver
 
 afterEach(() => {
   localStorage.clear();
+  delete document.documentElement.dataset.brand;
 });
 
 it("flips the stored tool activity preference from the settings toggle", async () => {
@@ -275,6 +276,29 @@ it("updates the Enter preference from Settings and reflects external changes", a
     expect(toggle.getAttribute("aria-checked")).toBe("false");
     await act(async () => setComposerEnterToSend(true));
     expect(toggle.getAttribute("aria-checked")).toBe("true");
+  } finally {
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  }
+});
+
+it("offers the appearance switch upstream and keeps the language row when branded", async () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    await act(async () => {
+      root.render(<GeneralSettingsPanels name="Test" />);
+    });
+    expect(container.textContent).toContain("Appearance");
+    expect(container.textContent).toContain("Language");
+
+    document.documentElement.dataset.brand = "torxflow";
+    await act(async () => {
+      root.render(<GeneralSettingsPanels name="Test" />);
+    });
+    expect(container.textContent).not.toContain("Appearance");
+    expect(container.textContent).toContain("Language");
   } finally {
     await act(async () => root.unmount());
     vi.unstubAllGlobals();

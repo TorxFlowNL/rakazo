@@ -6,6 +6,8 @@ import {
   webTokensForAppearance,
 } from "@rakazo/ui-tokens";
 
+import { activeBrand } from "./brand";
+
 export type { AppearancePreference, ResolvedAppearance };
 
 const THEME_COLOR_META = 'meta[name="theme-color"]';
@@ -32,11 +34,16 @@ export function applyResolvedAppearance(
   }
 }
 
+/** A brand has one appearance; the user's choice and the OS scheme do not apply to it. */
+export function brandedAppearance(): ResolvedAppearance | null {
+  return activeBrand()?.appearance ?? null;
+}
+
 export function applyUiAppearance(
   preference: AppearancePreference = resolveAppearancePreference(),
   system: ResolvedAppearance = readSystemAppearance(),
 ): ResolvedAppearance {
-  const resolved = resolveAppearance(preference, system);
+  const resolved = brandedAppearance() ?? resolveAppearance(preference, system);
   applyResolvedAppearance(resolved);
   return resolved;
 }

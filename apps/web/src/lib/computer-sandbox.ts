@@ -1,11 +1,8 @@
 import { t } from "@lingui/core/macro";
 import type { Me } from "@rakazo/contracts";
+import { computersAreUnavailable } from "./computer-availability";
 import { rpc } from "./rpc";
 import { errorText } from "./user-error";
-
-export function computersAreUnavailable(sandboxProvider: string | null | undefined): boolean {
-  return sandboxProvider === "none" || sandboxProvider === "";
-}
 
 export type SandboxAvailabilityPhase = "idle" | "loading" | "recovered" | "unavailable" | "failure";
 

@@ -16,6 +16,7 @@ import {
   isNonPublicAddress,
   normalizeHost,
 } from "@rakazo/contracts";
+import { normalizeToolTitle } from "@rakazo/core";
 import { Agent } from "undici";
 import { combineSignals } from "./connector-safety.js";
 import type { ResolvedAddress, ResolveHostname } from "./network-address.js";
@@ -57,10 +58,20 @@ export interface SafeRemoteFetch {
 const resolveHostname: ResolveHostname = (hostname) =>
   lookup(hostname, { all: true, verbatim: true });
 
+/**
+ * The label an MCP tool declares for people: `title` (MCP 2025-06+), else `annotations.title`.
+ * Returned as a spreadable field so tools without one keep their exact earlier shape.
+ */
+export function mcpToolTitle(tool: Pick<Tool, "title" | "annotations">): { title?: string } {
+  const title = normalizeToolTitle(tool.title) ?? normalizeToolTitle(tool.annotations?.title);
+  return title ? { title } : {};
+}
+
 export async function listRemoteMcpTools(options: RemoteMcpOptions): Promise<ConnectorTool[]> {
   return withRemoteMcpClient(options, async (client, signal) =>
     (await listMcpTools(client, { signal, timeout: MCP_TIMEOUT_MS })).map((tool) => ({
       name: tool.name,
+      ...mcpToolTitle(tool),
       description: tool.description ?? tool.title ?? tool.name,
       inputSchema: tool.inputSchema,
       readOnly: tool.annotations?.readOnlyHint,

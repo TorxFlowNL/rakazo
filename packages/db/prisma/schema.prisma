@@ -248,6 +248,9 @@ model ActionApprovalRule {
   effect          String
   matchKind       String
   matchValue      String
+  /// Set on a rule the deployment writes and keeps in sync itself (for example the TorxFlow
+  /// read-only tool rules); null for a rule a member made.
+  source          String?
   createdAt       DateTime @default(now())
 
   @@unique([spaceId, createdByUserId, effect, matchKind, matchValue])
@@ -1919,6 +1922,8 @@ model UserActionApprovalRule {
   effect     String
   matchKind  String
   matchValue String
+  /// Set on a rule the deployment writes and keeps in sync itself; null for a rule a member made.
+  source     String?
   createdAt  DateTime @default(now())
 
   @@unique([userId, effect, matchKind, matchValue])

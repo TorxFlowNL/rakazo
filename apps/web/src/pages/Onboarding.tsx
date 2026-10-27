@@ -49,6 +49,7 @@ import {
 import { ModelHeadersEditor } from "../components/ModelHeadersEditor";
 import { PageLoading } from "../components/PageLoading";
 import { SignupSurvey } from "../components/SignupSurvey";
+import { showMarketing } from "../lib/brand-chrome";
 import { useCopyText } from "../lib/copy-text";
 import { providerDisplayName } from "../lib/localized-provider-hint";
 import type { ModelCatalogEntry } from "../lib/model-auth";
@@ -146,7 +147,8 @@ export function OnboardingPage() {
   const fieldId = useId();
   // The URL holds the survey and model steps, so /onboarding/survey and /onboarding/model open directly.
   const { step: routeStep } = useParams();
-  const linkedStep = routeStep === "survey" || routeStep === "model" ? routeStep : undefined;
+  const linkedStep =
+    (routeStep === "survey" && showMarketing()) || routeStep === "model" ? routeStep : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
   const [surveyDone, setSurveyDone] = useState(false);
   const step = creatingBot ? "bot" : surveyDone ? "loading" : (linkedStep ?? "loading");
@@ -212,11 +214,11 @@ export function OnboardingPage() {
   useEffect(() => {
     void Promise.all([rpc.me(), rpc.models.list().catch(() => [])])
       .then(([me, models]) => {
-        setBillingEnabled(me.billingEnabled);
+        setBillingEnabled(me.billingEnabled && showMarketing());
         setCatalog(models);
         const next = me.needsModel ? "model" : "bot";
         setAfterSurvey(next);
-        if (!linkedStep) goTo(me.needsSignupSurvey ? "survey" : next);
+        if (!linkedStep) goTo(me.needsSignupSurvey && showMarketing() ? "survey" : next);
       })
       .catch(() => {
         setAfterSurvey("bot");
@@ -543,13 +545,15 @@ export function OnboardingPage() {
       const bot = imported ?? (await ensureFirstBot());
       // Onboarding continues conversationally in the thread: greeting first,
       // then the focus choice (immediate for the first bot), which an imported
-      // bot already answered.
-      const started = await rpc.onboarding
-        .start({ botId: bot.id })
-        .then(() => true)
-        .catch(() => false);
-      if (started && !imported) {
-        await rpc.onboarding.promptFocus({ botId: bot.id }).catch(() => undefined);
+      // bot already answered. A branded deployment has no such tour.
+      if (showMarketing()) {
+        const started = await rpc.onboarding
+          .start({ botId: bot.id })
+          .then(() => true)
+          .catch(() => false);
+        if (started && !imported) {
+          await rpc.onboarding.promptFocus({ botId: bot.id }).catch(() => undefined);
+        }
       }
       navigate(`/app/${bot.id}`);
     } catch (err) {

@@ -51,6 +51,7 @@ async function renderGate(billing: boolean) {
 afterEach(() => {
   vi.clearAllMocks();
   vi.unstubAllGlobals();
+  delete document.documentElement.dataset.brand;
 });
 
 it("opens without waiting on me or billing when the deployment does not bill", async () => {
@@ -81,5 +82,16 @@ it("shows the paywall without access and opens once a recheck finds access", asy
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
   expect(container.textContent).toBe("app");
+  act(() => root.unmount());
+});
+
+it("never holds a branded deployment behind a paywall", async () => {
+  document.documentElement.dataset.brand = "torxflow";
+  api.me.mockResolvedValue({ billingEnabled: true });
+  api.status.mockResolvedValue({ access: false });
+  const { container, root } = await renderGate(true);
+  expect(container.textContent).toBe("app");
+  expect(api.me).not.toHaveBeenCalled();
+  expect(api.status).not.toHaveBeenCalled();
   act(() => root.unmount());
 });

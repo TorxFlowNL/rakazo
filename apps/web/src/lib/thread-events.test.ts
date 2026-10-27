@@ -1241,6 +1241,34 @@ describe("thread event reduction", () => {
     ]);
   });
 
+  it("labels a live tool step with the title its server gave the tool", () => {
+    const next = reduceThreadSnapshot(
+      snapshot([]),
+      event({
+        type: "agent.tool.called",
+        seq: 4,
+        runId: "run-1",
+        payload: { name: "mcp__torxflow__check_apk_status", title: "APK-status opzoeken" },
+      }),
+    );
+    expect(next?.messages[0]?.blocks).toEqual([
+      { kind: "steps", steps: [{ label: "APK-status opzoeken", count: 1 }] },
+    ]);
+
+    const untitled = reduceThreadSnapshot(
+      snapshot([]),
+      event({
+        type: "agent.tool.called",
+        seq: 4,
+        runId: "run-1",
+        payload: { name: "mcp__torxflow__check_apk_status" },
+      }),
+    );
+    expect(untitled?.messages[0]?.blocks).toEqual([
+      { kind: "steps", steps: [{ label: "Check apk status", count: 1 }] },
+    ]);
+  });
+
   it("advances past tool completion audit events without adding a visible message", () => {
     const initial = snapshot(
       [

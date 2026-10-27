@@ -599,6 +599,80 @@ describe("humanizeToolName", () => {
   it("turns a lowercase builtin tool name into a readable label", () => {
     expect(humanizeToolName("request_takeover")).toBe("Request takeover");
   });
+
+  it("never shows a connector tool's server prefix", () => {
+    expect(humanizeToolName("mcp__torxflow__check_apk_status")).toBe("Check apk status");
+  });
+});
+
+describe("tool titles in steps", () => {
+  it("labels a step with the title its server gave the tool", () => {
+    expect(appendToolStep([], "mcp__torxflow__check_apk_status", "APK-status opzoeken")).toEqual([
+      { label: "APK-status opzoeken", count: 1 },
+    ]);
+    expect(
+      appendToolCallSegment([], "mcp__torxflow__check_apk_status", "APK-status opzoeken"),
+    ).toEqual([{ kind: "steps", steps: [{ label: "APK-status opzoeken", count: 1 }] }]);
+  });
+
+  it("falls back to the readable id when the tool has no title", () => {
+    expect(appendToolCallSegment([], "mcp__torxflow__check_apk_status")).toEqual([
+      { kind: "steps", steps: [{ label: "Check apk status", count: 1 }] },
+    ]);
+  });
+
+  it("titles a live step from the tool event", () => {
+    expect(
+      reduceLiveMessageBlocks([], {
+        type: "tool",
+        name: "mcp__torxflow__request_appointment",
+        title: "Afspraakverzoek aanmaken",
+      }),
+    ).toEqual([{ kind: "steps", steps: [{ label: "Afspraakverzoek aanmaken", count: 1 }] }]);
+  });
+
+  it("keeps a pending tool's title until its narration reaches a sentence end", () => {
+    const blocks = [{ kind: "progress" as const, text: "Let me check " }];
+    const pending = reduceLiveMessageBlocks(blocks, {
+      type: "tool",
+      name: "mcp__torxflow__check_apk_status",
+      title: "APK-status opzoeken",
+    });
+    expect(pending).toEqual([
+      {
+        kind: "progress",
+        text: "Let me check ",
+        pendingToolNames: ["mcp__torxflow__check_apk_status"],
+        pendingToolTitles: { mcp__torxflow__check_apk_status: "APK-status opzoeken" },
+      },
+    ]);
+    expect(
+      reduceLiveMessageBlocks(pending, {
+        type: "progress",
+        payload: { delta: "the plate.", streaming: true },
+      }),
+    ).toEqual([
+      { kind: "text", text: "Let me check the plate." },
+      { kind: "steps", steps: [{ label: "APK-status opzoeken", count: 1 }] },
+    ]);
+  });
+
+  it("projects the title carried by an agent.tool.called event", () => {
+    const messages = projectMessages([
+      {
+        id: "e1",
+        threadId: "t1",
+        seq: 0,
+        type: "agent.tool.called",
+        runId: "r1",
+        payload: { name: "mcp__torxflow__check_apk_status", title: "APK-status opzoeken" },
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+    expect(messages[0]?.blocks).toEqual([
+      { kind: "steps", steps: [{ label: "APK-status opzoeken", count: 1 }] },
+    ]);
+  });
 });
 
 describe("appendToolStep", () => {

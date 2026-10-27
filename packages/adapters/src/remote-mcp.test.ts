@@ -7,6 +7,8 @@ import {
   createSafeLookup,
   createSafeRemoteFetch,
   limitRemoteMcpPayload,
+  listRemoteMcpTools,
+  mcpToolTitle,
 } from "./remote-mcp.js";
 
 const publicResolver = async () => [{ address: "203.0.113.10", family: 4 as const }];
@@ -594,6 +596,67 @@ describe("remote MCP result limits", () => {
     expect(limited.truncated).toBe(true);
     expect(Buffer.byteLength(limited.content, "utf8")).toBeLessThanOrEqual(1_000_000);
     expect(limited.content).not.toContain("\uFFFD");
+  });
+});
+
+describe("remote MCP tool titles", () => {
+  it("prefers the tool title over annotations.title and ignores blanks", () => {
+    expect(
+      mcpToolTitle({ title: "Afspraakverzoek aanmaken", annotations: { title: "Other" } }),
+    ).toEqual({ title: "Afspraakverzoek aanmaken" });
+    expect(mcpToolTitle({ annotations: { title: "  APK-status\n opzoeken " } })).toEqual({
+      title: "APK-status opzoeken",
+    });
+    expect(mcpToolTitle({ title: "   ", annotations: { title: "Voorraad doorzoeken" } })).toEqual({
+      title: "Voorraad doorzoeken",
+    });
+    expect(mcpToolTitle({})).toEqual({});
+    expect(mcpToolTitle({ title: "x".repeat(500) }).title).toHaveLength(120);
+  });
+
+  it("carries the title of each listed tool and leaves untitled tools untouched", async () => {
+    const tools = [
+      { name: "check_apk_status", title: "APK-status opzoeken", inputSchema: { type: "object" } },
+      {
+        name: "request_appointment",
+        inputSchema: { type: "object" },
+        annotations: { title: "Afspraakverzoek aanmaken", readOnlyHint: false },
+      },
+      { name: "plain", inputSchema: { type: "object" } },
+    ];
+    const fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      if (init?.method !== "POST") return new Response(null, { status: 405 });
+      const message = JSON.parse(String(init.body)) as { id?: number; method?: string };
+      if (message.method === "initialize") {
+        return Response.json({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            protocolVersion: "2025-11-25",
+            capabilities: { tools: {} },
+            serverInfo: { name: "test", version: "1" },
+          },
+        });
+      }
+      if (message.method === "tools/list") {
+        return Response.json({ jsonrpc: "2.0", id: message.id, result: { tools } });
+      }
+      return new Response(null, { status: 202 });
+    });
+
+    const listed = await listRemoteMcpTools({
+      endpoint: "https://connectors.example.test/mcp",
+      fetch: fetch as typeof globalThis.fetch,
+      resolveHostname: publicResolver,
+    });
+
+    expect(listed.map((tool) => tool.title)).toEqual([
+      "APK-status opzoeken",
+      "Afspraakverzoek aanmaken",
+      undefined,
+    ]);
+    expect(listed[2]).not.toHaveProperty("title");
+    expect(listed[1]).toMatchObject({ name: "request_appointment", readOnly: false });
   });
 });
 

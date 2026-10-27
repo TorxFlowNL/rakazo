@@ -1,6 +1,6 @@
 import { Plural, Trans } from "@lingui/react/macro";
 import type { ThreadMessage } from "@rakazo/contracts";
-import { formatCompactDuration } from "@rakazo/core";
+import { formatCompactDuration, normalizeStepLabel } from "@rakazo/core";
 import {
   Collapsible,
   CollapsibleContent,
@@ -36,6 +36,7 @@ export function ToolSteps({
       ) : null}
       {shown.map((step, offset) => {
         const index = hidden + offset;
+        const label = normalizeStepLabel(step.label);
         const isCurrent = index === currentIndex;
         return (
           <div key={index} className="flex min-w-0 items-center gap-2 leading-5">
@@ -49,9 +50,9 @@ export function ToolSteps({
               className={`min-w-0 flex-1 truncate text-[13px] ${
                 isCurrent ? "text-foreground" : "text-muted-foreground"
               }`}
-              title={step.label}
+              title={label}
             >
-              {step.label}
+              {label}
               {step.count > 1 ? ` ×${step.count}` : ""}
             </span>
           </div>

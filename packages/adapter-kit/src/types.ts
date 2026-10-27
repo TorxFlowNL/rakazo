@@ -259,6 +259,8 @@ export interface SandboxCapabilities {
 
 export interface ConnectorTool {
   name: string;
+  /** Short human label the tool's server declared (MCP `title`). Display only; never model-visible. */
+  title?: string;
   description: string;
   inputSchema: Record<string, unknown>;
   /** Declared effect. `false` forces approval; `true` never relaxes the name-based gate. */
