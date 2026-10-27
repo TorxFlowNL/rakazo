@@ -50,6 +50,21 @@ describe("resolveDeploymentModel", () => {
     });
   });
 
+  it("runs DeepSeek as the deployment model on its own key", () => {
+    const keys = { OPENROUTER_API_KEY: "or-key", DEEPSEEK_API_KEY: "sk-deepseek" };
+    expect(resolveDeploymentModel({ ...keys, PI_DEFAULT_PROVIDER: "deepseek" })).toEqual({
+      provider: "deepseek",
+      model: "deepseek-flash",
+      key: "sk-deepseek",
+      configured: true,
+      hostCredentials: false,
+    });
+    // Without its own key DeepSeek is not configured, and never borrows OpenRouter's.
+    expect(
+      resolveDeploymentModel({ OPENROUTER_API_KEY: "or-key", PI_DEFAULT_PROVIDER: "deepseek" }),
+    ).toMatchObject({ provider: "deepseek", key: undefined, configured: false });
+  });
+
   it("runs a provider that authenticates from the host without a key", () => {
     vi.stubEnv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", "/v2/credentials/example");
     const taskRole = {
