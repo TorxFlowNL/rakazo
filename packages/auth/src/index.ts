@@ -36,10 +36,18 @@ import { isCurrentOidcAccount, oidcDiscovery } from "./oidc.js";
 import { passkeyRelyingParty } from "./passkey.js";
 import type { TokenKey } from "./token-storage.js";
 import { encryptStoredOAuthTokens, openIdToken, sealIdToken } from "./token-storage.js";
+import type { TorxflowProvisionInput } from "./torxflow-sso.js";
+import { TORXFLOW_SSO_PATH, torxflowSso } from "./torxflow-sso.js";
 
 export { passwordResetEmail, signInCodeEmail, verificationEmail } from "./email.js";
 export type { OidcConfig } from "./oidc.js";
 export { passkeyRelyingParty } from "./passkey.js";
+export type { TorxflowClaims, TorxflowProvisionInput } from "./torxflow-sso.js";
+export {
+  TORXFLOW_SSO_MIN_SECRET_LENGTH,
+  TORXFLOW_SSO_PATH,
+  verifyTorxflowToken,
+} from "./torxflow-sso.js";
 
 export interface AuthEnv {
   analytics?: ProductAnalytics;
@@ -47,6 +55,15 @@ export interface AuthEnv {
   /** Opt-in: rejects new passwords found in Have I Been Pwned. Calls an outside service. */
   breachedPasswordCheck?: boolean;
   oidc?: OidcConfig;
+  /**
+   * Signs in TorxFlow users from a token TorxFlow signs with `secret`, at
+   * `/api/auth/torxflow/sso`. The route is absent when this is not set.
+   */
+  torxflow?: {
+    secret: string;
+    /** Gives a garage member's space its bot and tools; see `TorxflowSsoOptions.provision`. */
+    provision?: (input: TorxflowProvisionInput) => Promise<void>;
+  };
   secret: string;
   baseURL: string;
   webOrigin: string;
@@ -121,6 +138,8 @@ export function authRateLimitOptions(nodeEnv = process.env.NODE_ENV) {
       "/confirm-identity": rule,
       "/passkey/verify-authentication": rule,
       "/passkey/verify-registration": rule,
+      // Staff of one garage share an office address, and a signed token cannot be guessed.
+      [TORXFLOW_SSO_PATH]: { window: 60, max: 30 },
       // Sign-in pages request a challenge on load for passkey autofill.
       "/passkey/generate-authenticate-options": { window: 60, max: 30 },
     },
@@ -280,6 +299,15 @@ export function createAuth(prisma: PrismaClient, env: AuthEnv) {
                   ?.send(await signInCodeEmail(email, otp))
                   .catch((error) => env.onEmailError?.(error));
               },
+            }),
+          ]
+        : []),
+      ...(env.torxflow
+        ? [
+            torxflowSso(prisma, {
+              secret: env.torxflow.secret,
+              signupPolicy: env,
+              provision: env.torxflow.provision,
             }),
           ]
         : []),

@@ -784,6 +784,58 @@ link only for a service you control: a trusted page runs with the signed-in user
 script allowed by `RAKAZO_CSP_SCRIPT_SRC`. The page must allow framing by the app
 (`frame-ancestors 'self'`). Links appear in the web app only; the desktop and mobile apps hide them.
 
+### TorxFlow integration
+
+A fork deployment can run inside the TorxFlow dashboard: TorxFlow frames Rakazo, signs its users in,
+and each garage gets a space with a Tessa bot that uses the garage's tools over MCP. Everything is
+off until you set the variables below on the API and web services (the compose files pass them
+by name).
+
+| Variable | Service | Meaning |
+| --- | --- | --- |
+| `RAKAZO_CSP_FRAME_ANCESTORS` | web, caddy | Space-separated `https://` origins that may embed the app, for example `https://garage.example.com`. The policy becomes `frame-ancestors 'self' <origins>`. Unset keeps `'none'`. While it is set, `Caddyfile.prod` and `Caddyfile.cloudflare.example` stop sending `X-Frame-Options: SAMEORIGIN`, which would block the embedding. |
+| `TORXFLOW_SSO_SECRET` | api | At least 32 characters, the same value TorxFlow signs with. Enables `GET /api/auth/torxflow/sso`. |
+| `TORXFLOW_MCP_URL` | api | The garage's MCP endpoint, for example `https://garage.example.com/tessa/mcp`. Its persona is read from `<url>/persona`. |
+| `TORXFLOW_MCP_TOKEN` | api | Bearer token for both. Set together with `TORXFLOW_MCP_URL`. |
+
+Sign-in takes `?token=<jwt>&redirect=<path>`. The token is HS256 with `iss: "torxflow"`,
+`aud: "rakazo"`, `iat`, `exp` (at most 120 seconds ahead), a single-use `jti`, `sub`, `email`,
+`name`, `tenantId`, `tenantSlug`, `tenantName` and `role` (`owner`, `admin` or `member`). It
+is refused when expired, replayed or signed with another key. `redirect` must be a path on this
+site; anything else lands on `/`. TorxFlow is the identity provider here, so its verified email
+links to an existing account and an unknown one is created without the signup policy; a different
+TorxFlow identity is never linked to an email that already has one. The route is limited to 30
+requests a minute per client.
+
+Each garage (`tenantId`) maps to one organization and one default space named after it. The first
+member to arrive owns it; later members join as `admin` (TorxFlow owner and admin) or `member`.
+Roles are set when a member joins and are not changed by later sign-ins. Because Rakazo keeps bots
+and MCP servers private to the member who owns them, each member gets their own `TorxFlow` MCP
+install (the token stored encrypted like any MCP credential) and their own **Tessa** bot, created on
+first sign-in with the deployment's default model and the instructions from `<url>/persona`. Repeat
+sign-ins create nothing new, retry whatever failed last time, and point the install at a rotated
+URL or token. A failure in this step is logged and never blocks sign-in. A user who already had a
+space before the first TorxFlow sign-in keeps it, and the garage space opens first.
+
+Both hosts have to be the same site (for example two subdomains of one registrable domain) so the
+`SameSite=Lax` session cookie is sent inside the frame.
+
+Remote MCP egress: the MCP URL and the persona request go through the same check as any remote MCP
+server. A public `https://` hostname that resolves only to public addresses needs no setting. A
+URL on a private, loopback or Docker-network address, or plain `http://`, is refused unless
+`MCP_ALLOW_PRIVATE_ENDPOINT=true` on the API and worker; the API must
+also be able to reach the URL from inside its container, so on a single host use the public
+hostname rather than a private one. `RAKAZO_HOST` may carry `http://` (for example
+`RAKAZO_HOST=http://team.example.com`) when another proxy terminates TLS in front of Rakazo's Caddy;
+the web server's host allowlist uses the bare hostname.
+
+Build the image from the checkout and point the stack at it with `RAKAZO_IMAGE=rakazo-torxflow` and
+`RAKAZO_IMAGE_TAG=local`:
+
+```bash
+docker build -f infra/compose/Dockerfile -t rakazo-torxflow:local .
+```
+
 ### Security events
 
 The API and worker append a row to `security_events` and write a `security.event` log line for:

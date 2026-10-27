@@ -10,6 +10,7 @@ import {
   telegramBotsFromEnv,
 } from "@rakazo/adapters";
 import type { OidcConfig } from "@rakazo/auth";
+import { TORXFLOW_SSO_MIN_SECRET_LENGTH } from "@rakazo/auth";
 import type { MinimumClientBuilds, NavLink } from "@rakazo/contracts";
 import { parseMinimumClientBuilds, parseNavLinks } from "@rakazo/contracts";
 import { parseCrispWebsiteId } from "@rakazo/contracts/content-security-policy";
@@ -149,8 +150,52 @@ export interface AppEnv {
   browserMonitoring:
     | { dsn: string; environment?: string; release?: string; pseudonymSecret?: string }
     | undefined;
+  /** TorxFlow single sign-on and its garage tools; absent unless `TORXFLOW_SSO_SECRET` is set. */
+  torxflow?: TorxflowEnv;
   /** Crisp chat on the paywall, for the hosted service; self-hosted installs leave it unset. */
   crispWebsiteId?: string | null;
+}
+
+export interface TorxflowEnv {
+  /** HS256 secret TorxFlow signs sign-in tokens with (`TORXFLOW_SSO_SECRET`). */
+  ssoSecret: string;
+  /** Remote MCP endpoint and bearer token of the garage's tools; both or neither. */
+  mcp?: { url: string; token: string };
+}
+
+function torxflowFromEnv(source: NodeJS.ProcessEnv): TorxflowEnv | undefined {
+  const ssoSecret = optional(source.TORXFLOW_SSO_SECRET);
+  const url = optional(source.TORXFLOW_MCP_URL);
+  const token = optional(source.TORXFLOW_MCP_TOKEN);
+  if (!ssoSecret) {
+    if (url || token)
+      throw new Error("TORXFLOW_MCP_URL and TORXFLOW_MCP_TOKEN need TORXFLOW_SSO_SECRET");
+    return undefined;
+  }
+  if (ssoSecret.length < TORXFLOW_SSO_MIN_SECRET_LENGTH) {
+    throw new Error(
+      `TORXFLOW_SSO_SECRET must be at least ${TORXFLOW_SSO_MIN_SECRET_LENGTH} characters`,
+    );
+  }
+  if (Boolean(url) !== Boolean(token)) {
+    throw new Error("TORXFLOW_MCP_URL and TORXFLOW_MCP_TOKEN must be configured together");
+  }
+  if (url && token) {
+    let endpoint: URL;
+    try {
+      endpoint = new URL(url);
+    } catch {
+      throw new Error("TORXFLOW_MCP_URL must be an https:// URL");
+    }
+    // Plain http only reaches a private endpoint, which needs the operator's explicit escape.
+    const httpAllowed =
+      endpoint.protocol === "http:" && source.MCP_ALLOW_PRIVATE_ENDPOINT === "true";
+    if ((endpoint.protocol !== "https:" && !httpAllowed) || endpoint.username || endpoint.hash) {
+      throw new Error("TORXFLOW_MCP_URL must be an https:// URL without credentials");
+    }
+    return { ssoSecret, mcp: { url: url.replace(/\/+$/, ""), token } };
+  }
+  return { ssoSecret };
 }
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
@@ -309,6 +354,7 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     minimumClientBuilds: parseMinimumClientBuilds(source.RAKAZO_MIN_CLIENT_BUILD),
     browserMonitoring: browserMonitoringFromEnv(source),
     crispWebsiteId: parseCrispWebsiteId(source.CRISP_WEBSITE_ID),
+    torxflow: torxflowFromEnv(source),
   };
 }
 

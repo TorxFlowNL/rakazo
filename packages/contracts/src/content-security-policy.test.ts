@@ -146,6 +146,42 @@ describe("operator-added origins", () => {
   });
 });
 
+describe("frame ancestors", () => {
+  it("keeps the app unframeable until an operator allows an embedding origin", () => {
+    const none = appContentSecurityPolicy({ frameAncestors: [] });
+    expect(directives(none).get("frame-ancestors")).toEqual(["'none'"]);
+    expect(none).toBe(APP_CONTENT_SECURITY_POLICY);
+  });
+
+  it("allows the app itself plus the configured origins, and changes nothing else", () => {
+    const origins = parseContentSecuritySources(
+      "RAKAZO_CSP_FRAME_ANCESTORS",
+      "https://garage.example.com https://*.example.net",
+    );
+    const framed = directives(appContentSecurityPolicy({ frameAncestors: origins }));
+    expect(framed.get("frame-ancestors")).toEqual([
+      "'self'",
+      "https://garage.example.com",
+      "https://*.example.net",
+    ]);
+    const base = directives(APP_CONTENT_SECURITY_POLICY);
+    for (const [name, sources] of base) {
+      if (name !== "frame-ancestors") expect(framed.get(name)).toEqual(sources);
+    }
+  });
+
+  it("rejects an origin that is not https", () => {
+    expect(() => parseContentSecuritySources("RAKAZO_CSP_FRAME_ANCESTORS", "*")).toThrow(
+      /^RAKAZO_CSP_FRAME_ANCESTORS accepts only https:\/\/ origins/,
+    );
+  });
+
+  it("keeps the HTML viewer shell self-framed only", () => {
+    const framed = appContentSecurityPolicy({ frameAncestors: ["https://garage.example.com"] });
+    expect(contentSecurityPolicyFor(HTML_VIEWER_PATH, framed)).toBe("frame-ancestors 'self'");
+  });
+});
+
 describe("Crisp chat widget", () => {
   it("adds Crisp's origins only when the deployment configures it", () => {
     const crisp = directives(

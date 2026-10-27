@@ -30,11 +30,12 @@
 	# A localhost trial must not pin HTTPS onto every local dev server.
 	@hsts not host localhost 127.0.0.1
 	header @hsts Strict-Transport-Security "max-age=31536000"
-	# SAMEORIGIN still lets the app frame its own /novnc/ screen.
-	header {
-		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
-	}
+	header X-Content-Type-Options nosniff
+	# SAMEORIGIN still lets the app frame its own /novnc/ screen. When RAKAZO_CSP_FRAME_ANCESTORS
+	# lets another site embed the app, the web server's CSP frame-ancestors governs instead; this
+	# header would block that embedding in every browser that honours it.
+	@unframed expression `"{$RAKAZO_CSP_FRAME_ANCESTORS:}" == ""`
+	header @unframed X-Frame-Options SAMEORIGIN
 
 	handle /health {
 		reverse_proxy api:3100 {

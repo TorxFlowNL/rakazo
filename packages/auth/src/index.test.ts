@@ -116,6 +116,7 @@ describe("authRateLimitOptions", () => {
         "/sign-in/email-otp": { window: 15 * 60, max: 10 },
         "/passkey/verify-authentication": { window: 15 * 60, max: 10 },
         "/passkey/verify-registration": { window: 15 * 60, max: 10 },
+        "/torxflow/sso": { window: 60, max: 30 },
         "/passkey/generate-authenticate-options": { window: 60, max: 30 },
       },
     });

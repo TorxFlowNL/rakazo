@@ -7,12 +7,12 @@ export interface SignupPolicyEnv {
   signupAllowlist: string | undefined;
 }
 
-function newId(): string {
+export function newId(): string {
   return randomBytes(16).toString("hex");
 }
 
 /** Prisma unique-constraint violation; anything else must still throw. */
-function isUniqueViolation(error: unknown): boolean {
+export function isUniqueViolation(error: unknown): boolean {
   return Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002");
 }
 
@@ -76,6 +76,16 @@ export async function bootstrapUserSpace(
     .catch((error: unknown) => {
       if (!isUniqueViolation(error)) throw error;
     });
+  await ensureDeploymentSettings(prisma, env);
+  await seedMemberDefaults(prisma, orgId, user.id);
+  return { spaceId: orgId };
+}
+
+/** Seeds the deployment's signup policy from the environment on the first signup. */
+export async function ensureDeploymentSettings(
+  prisma: PrismaClient,
+  env: SignupPolicyEnv,
+): Promise<void> {
   const policy = signupPolicyFromEnv(env);
   await prisma.deploymentSettings.upsert({
     where: { id: "default" },
@@ -88,15 +98,23 @@ export async function bootstrapUserSpace(
     },
     update: {},
   });
+}
+
+/** A member's space memory and notification preferences; a repeat call keeps what exists. */
+export async function seedMemberDefaults(
+  prisma: PrismaClient,
+  spaceId: string,
+  userId: string,
+): Promise<void> {
   const hasMemory = await prisma.memoryDocument.findFirst({
-    where: { spaceId: orgId, userId: user.id, scope: "user", path: "MEMORY.md" },
+    where: { spaceId, userId, scope: "user", path: "MEMORY.md" },
   });
   if (!hasMemory) {
     await prisma.memoryDocument
       .create({
         data: {
-          spaceId: orgId,
-          userId: user.id,
+          spaceId,
+          userId,
           scope: "user",
           path: "MEMORY.md",
           content: "# Space memory\n\nPreferences and context kept within this space live here.\n",
@@ -107,14 +125,8 @@ export async function bootstrapUserSpace(
       });
   }
   await prisma.notificationPreference
-    .create({
-      data: {
-        spaceId: orgId,
-        userId: user.id,
-      },
-    })
+    .create({ data: { spaceId, userId } })
     .catch((error: unknown) => {
       if (!isUniqueViolation(error)) throw error;
     });
-  return { spaceId: orgId };
 }

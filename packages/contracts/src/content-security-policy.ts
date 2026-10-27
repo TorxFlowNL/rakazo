@@ -48,6 +48,8 @@ function serialize(directives: Record<string, string[]>) {
 export interface ContentSecurityPolicyExtensions {
   scriptSrc?: readonly string[];
   connectSrc?: readonly string[];
+  /** Origins allowed to embed the app in a frame; none by default. */
+  frameAncestors?: readonly string[];
   /** Allows the Crisp chat widget the paywall loads when `CRISP_WEBSITE_ID` is set. */
   crisp?: boolean;
 }
@@ -109,6 +111,9 @@ export function appContentSecurityPolicy(extensions: ContentSecurityPolicyExtens
     "script-src": ["'self'", ...(extensions.scriptSrc ?? [])],
     "connect-src": ["'self'", ...(extensions.connectSrc ?? [])],
   };
+  if (extensions.frameAncestors?.length) {
+    directives["frame-ancestors"] = ["'self'", ...extensions.frameAncestors];
+  }
   if (extensions.crisp) {
     for (const [name, sources] of Object.entries(CRISP_DIRECTIVES)) {
       directives[name] = [...new Set([...(directives[name] ?? []), ...sources])];

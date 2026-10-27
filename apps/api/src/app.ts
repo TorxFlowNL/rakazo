@@ -99,6 +99,7 @@ import {
   createBoardEvents,
   createDb,
   createPool,
+  createRepos,
   createSecurityEventPruner,
   createThreadEvents,
   describeRowSecurity,
@@ -146,6 +147,7 @@ import type { AppEnv } from "./env.js";
 import { loadEnv } from "./env.js";
 import { healthRoutes } from "./health.js";
 import { mountLocalComputerHost } from "./local-settings.js";
+import { createMcpServers } from "./mcp-servers.js";
 import {
   createMessagingInboundHandler,
   teamChatSenderCanWakeMessageRoutines,
@@ -155,6 +157,7 @@ import { createMessagingReceipts } from "./messaging-receipts.js";
 import { mountMessagingWebhookRoutes } from "./messaging-webhook.js";
 import { monitoringRoutes } from "./monitoring.js";
 import { mountApiRequestBodyLimits } from "./request-body-limit.js";
+import type { RouterDeps } from "./router.js";
 import { createRouter } from "./router.js";
 import { mountScreenTarget } from "./screen-proxy.js";
 import { createAuthResponseAudit } from "./security-audit.js";
@@ -168,6 +171,11 @@ import {
   TEAM_CHAT_STARTUP_SHUTDOWN_MS,
   TeamChatStartupRetries,
 } from "./team-chat-startup.js";
+import {
+  createTorxflowProvisioner,
+  type TorxflowProvisioner,
+  torxflowPersonaFetcher,
+} from "./torxflow-provision.js";
 import { mountUserDeviceRoutes } from "./user-devices.js";
 import { mountVoiceHttpRoutes, voiceAccountErrorStatus } from "./voice.js";
 import { mountWebhookHttpRoutes } from "./webhook.js";
@@ -481,8 +489,14 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       jobs,
       accessToken: env.expoAccessToken,
     });
+  // The provisioner needs the router's services, which exist only after the auth is built.
+  let torxflowProvision: TorxflowProvisioner | undefined;
   const auth = createAuth(prisma, {
     analytics,
+    torxflow: env.torxflow && {
+      secret: env.torxflow.ssoSecret,
+      provision: async (input) => torxflowProvision?.(input),
+    },
     passwordAuth: env.passwordAuth,
     breachedPasswordCheck: env.breachedPasswordCheck,
     oidc: env.oidc,
@@ -650,7 +664,7 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     : undefined;
   reconciler?.start();
 
-  const router = createRouter({
+  const routerDeps: RouterDeps = {
     speechSummary:
       env.voiceSummaryMinChars === undefined
         ? undefined
@@ -724,7 +738,23 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
       mcpStdioEnabled: env.mcpStdioEnabled,
       mcpStdioAllowedCommands: env.mcpStdioAllowedCommands,
     },
-  });
+  };
+  const router = createRouter(routerDeps);
+  if (env.torxflow?.mcp) {
+    const onboardingDeps = { prisma, events, connectors: stack.connector };
+    torxflowProvision = createTorxflowProvisioner({
+      prisma,
+      secrets,
+      mcp: env.torxflow.mcp,
+      mcpServers: createMcpServers(routerDeps, onboardingDeps, mcpOAuth),
+      createBot: (actor, input) =>
+        createRepos(prisma, {
+          phoneCallsEnabled: env.phoneCallsEnabled,
+          phoneCallRingSeconds: env.phoneCallRingSeconds,
+        }).createBot(actor, input),
+      persona: torxflowPersonaFetcher(routerDeps),
+    });
+  }
   const rpc = new RPCHandler(router, {
     clientInterceptors: [onError((error, { path }) => handleRpcError(error, path))],
   });

@@ -479,7 +479,12 @@ export default defineConfig(({ command, mode }) => {
       } satisfies ProxyOptions,
     ]),
   );
-  const previewHost = process.env.RAKAZO_HOST ?? rootEnv.RAKAZO_HOST ?? "localhost";
+  // Caddy reads RAKAZO_HOST as a site address, so it may carry http:// to serve plain HTTP behind
+  // another TLS proxy; the Host allowlist wants the bare hostname.
+  const previewHost = (process.env.RAKAZO_HOST ?? rootEnv.RAKAZO_HOST ?? "localhost").replace(
+    /^https?:\/\//,
+    "",
+  );
   const allowedHosts = [
     previewHost,
     ...(process.env.RAKAZO_ALLOWED_HOSTS ?? rootEnv.RAKAZO_ALLOWED_HOSTS ?? "")
@@ -508,6 +513,10 @@ export default defineConfig(({ command, mode }) => {
     connectSrc: parseContentSecuritySources(
       "RAKAZO_CSP_CONNECT_SRC",
       process.env.RAKAZO_CSP_CONNECT_SRC ?? rootEnv.RAKAZO_CSP_CONNECT_SRC,
+    ),
+    frameAncestors: parseContentSecuritySources(
+      "RAKAZO_CSP_FRAME_ANCESTORS",
+      process.env.RAKAZO_CSP_FRAME_ANCESTORS ?? rootEnv.RAKAZO_CSP_FRAME_ANCESTORS,
     ),
     crisp: parseCrispWebsiteId(process.env.CRISP_WEBSITE_ID ?? rootEnv.CRISP_WEBSITE_ID) !== null,
   });

@@ -61,6 +61,52 @@ describe("loadEnv", () => {
     ).toBe("c2c27ea6-4fdb-4350-a9fc-4b5b052dc5ec");
     expect(() => loadEnv({ ...base, CRISP_WEBSITE_ID: "nope" })).toThrow("CRISP_WEBSITE_ID");
   });
+  it("keeps TorxFlow sign-in off unless its secret is set", () => {
+    expect(loadEnv(base).torxflow).toBeUndefined();
+    const secret = "s".repeat(32);
+    expect(loadEnv({ ...base, TORXFLOW_SSO_SECRET: secret }).torxflow).toEqual({
+      ssoSecret: secret,
+    });
+    expect(
+      loadEnv({
+        ...base,
+        TORXFLOW_SSO_SECRET: secret,
+        TORXFLOW_MCP_URL: "https://garage.example.test/tessa/mcp/",
+        TORXFLOW_MCP_TOKEN: "token",
+      }).torxflow,
+    ).toEqual({
+      ssoSecret: secret,
+      mcp: { url: "https://garage.example.test/tessa/mcp", token: "token" },
+    });
+  });
+  it("refuses a short TorxFlow secret and a half-configured or unsafe tool endpoint", () => {
+    const secret = "s".repeat(32);
+    const mcp = {
+      TORXFLOW_MCP_URL: "https://garage.example.test/tessa/mcp",
+      TORXFLOW_MCP_TOKEN: "t",
+    };
+    expect(() => loadEnv({ ...base, TORXFLOW_SSO_SECRET: "short" })).toThrow(
+      "TORXFLOW_SSO_SECRET must be at least 32 characters",
+    );
+    expect(() => loadEnv({ ...base, ...mcp })).toThrow("need TORXFLOW_SSO_SECRET");
+    expect(() =>
+      loadEnv({ ...base, TORXFLOW_SSO_SECRET: secret, TORXFLOW_MCP_URL: mcp.TORXFLOW_MCP_URL }),
+    ).toThrow("must be configured together");
+    for (const url of ["http://garage.example.test/mcp", "ftp://x", "not a url"]) {
+      expect(() =>
+        loadEnv({ ...base, TORXFLOW_SSO_SECRET: secret, ...mcp, TORXFLOW_MCP_URL: url }),
+      ).toThrow("TORXFLOW_MCP_URL must be an https:// URL");
+    }
+    expect(
+      loadEnv({
+        ...base,
+        TORXFLOW_SSO_SECRET: secret,
+        ...mcp,
+        TORXFLOW_MCP_URL: "http://127.0.0.1:8100/mcp",
+        MCP_ALLOW_PRIVATE_ENDPOINT: "true",
+      }).torxflow?.mcp?.url,
+    ).toBe("http://127.0.0.1:8100/mcp");
+  });
   it("defaults the product path to Pi, Docker, and Graphile Worker", () => {
     const env = loadEnv(base);
     expect(env.agentRuntime).toBe("pi");

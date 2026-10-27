@@ -24,6 +24,12 @@ describe.each(caddyfiles)("%s HSTS", (filename) => {
     expect(httpsSite).not.toContain("frame-ancestors 'none'");
   });
 
+  it("drops X-Frame-Options when RAKAZO_CSP_FRAME_ANCESTORS lets another site embed the app", () => {
+    expect(httpsSite).toContain('@unframed expression `"{$RAKAZO_CSP_FRAME_ANCESTORS:}" == ""`');
+    expect(httpsSite).toContain("header @unframed X-Frame-Options SAMEORIGIN");
+    expect(httpsSite).not.toMatch(/^\t\tX-Frame-Options/m);
+  });
+
   it("replaces the client-supplied forwarding header on API and RPC requests", () => {
     expect(httpsSite.match(/header_up X-Forwarded-For \{client_ip\}/g)).toHaveLength(2);
     expect(httpsSite).not.toContain("{remote_host}");
